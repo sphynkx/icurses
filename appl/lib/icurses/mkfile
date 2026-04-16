@@ -1,22 +1,26 @@
 <../../../mkconfig
 
 TARG=\
-	rect.dis\
-	term.dis\
+	icurses.dis\
+#	rect.dis\
+#	term.dis\
 	theme.dis\
 	screen.dis\
 	button.dis\
-	input.dis\
+#	input.dis\
+	dialog.dis\
 
 MODULES=\
 
 SYSMODULES=\
-	icurses/rect.m\
-	icurses/term.m\
+	icurses/icurses.m\
+#	icurses/rect.m\
+#	icurses/term.m\
 	icurses/theme.m\
 	icurses/screen.m\
 	icurses/button.m\
-	icurses/input.m\
+#	icurses/input.m\
+	icurses/dialog.m\
 
 DISBIN=$ROOT/dis/lib/icurses
 

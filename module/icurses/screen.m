@@ -1,5 +1,3 @@
-include "icurses/rect.m";
-
 IcScreen: module
 {
 	PATH: con "/dis/lib/icurses/screen.dis";
@@ -25,7 +23,7 @@ IcScreen: module
 	reset:		fn(scr: ref Screen);
 	invalidate:	fn(scr: ref Screen);
 	clear:		fn(scr: ref Screen, ch: string, attr: int);
-	clearrect:	fn(scr: ref Screen, r: IcRect->Rect, ch: string, attr: int);
+	clearrect:	fn(scr: ref Screen, x, y, w, h: int, ch: string, attr: int);
 	putc:		fn(scr: ref Screen, x, y: int, ch: string, attr: int);
 	put:		fn(scr: ref Screen, x, y: int, s: string, attr: int);
 	text:		fn(scr: ref Screen, x, y: int, s: string, attr: int);
@@ -34,5 +32,4 @@ IcScreen: module
 	vline:		fn(scr: ref Screen, x, y, h: int, ch: string, attr: int);
 	boxdouble:	fn(scr: ref Screen, x, y, w, h: int, attr: int);
 	shadow:		fn(scr: ref Screen, x, y, w, h: int, attr: int);
-	flush:		fn(scr: ref Screen, fd: ref Sys->FD, scheme: int);
 };

@@ -1,6 +1,10 @@
-IcInput: module
+include "sys.m";
+
+Icurses: module
 {
-	PATH: con "/dis/lib/icurses/input.dis";
+	PATH: con "/dis/lib/icurses/icurses.dis";
+
+	KeyboardPath: con "/dev/ekeyboard";
 
 	Khome:     con 57360;
 	Kend:      con 57361;
@@ -14,16 +18,9 @@ IcInput: module
 	Kins:      con 57443;
 	Kdel:      con 57444;
 
-	Input: adt
-	{
-		fd: ref Sys->FD;
-		buf: array of byte;
-		s: string;
-		i: int;
-		n: int;
-	};
-
 	init: fn();
-	open: fn(): ref Input;
-	readkey: fn(in: ref Input): int;
+
+	openkbd: fn(): int;
+	closekbd: fn();
+	readkey: fn(): int;
 };
