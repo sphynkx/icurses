@@ -1,0 +1,25 @@
+<../../../mkconfig
+
+TARG=\
+	rect.dis\
+	term.dis\
+	theme.dis\
+	screen.dis\
+	button.dis\
+	input.dis\
+
+MODULES=\
+
+SYSMODULES=\
+	icurses/rect.m\
+	icurses/term.m\
+	icurses/theme.m\
+	icurses/screen.m\
+	icurses/button.m\
+	icurses/input.m\
+
+DISBIN=$ROOT/dis/lib/icurses
+
+<$ROOT/mkfiles/mkdis
+
+LIMBOFLAGS= -c $LIMBOFLAGS
