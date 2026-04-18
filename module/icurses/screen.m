@@ -16,6 +16,10 @@ IcScreen: module
 		front:	array of Cell;
 		back:	array of Cell;
 		dirty:	array of int;
+
+		dirtyrow: array of int;
+		dirtyx0:  array of int;
+		dirtyx1:  array of int;
 	};
 
 	init:		fn();
