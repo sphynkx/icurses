@@ -58,4 +58,12 @@ Icurses: module
 	isconfirm: fn(k: int): int;
 	iscancel: fn(k: int): int;
 	navkind: fn(k: int): int;
+
+	cleartty: fn(out: ref Sys->FD);
+	resettty: fn(out: ref Sys->FD);
+	hidecursor: fn(out: ref Sys->FD);
+	showcursor: fn(out: ref Sys->FD);
+	cup: fn(out: ref Sys->FD, row, col: int);
+	sgr: fn(out: ref Sys->FD, code: string);
+	emitrun: fn(out: ref Sys->FD, row, col: int, code, text: string);
 };

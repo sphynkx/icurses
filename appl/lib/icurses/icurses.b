@@ -1,3 +1,9 @@
+# WARNING
+# On this target/runtime, internal helper functions in this module may crash
+# if they create local heap-managed values (for example string, array, list, ref).
+# Keep such allocations in exported/top-level call functions and pass the values
+# into helpers as arguments instead.
+
 implement Icurses;
 
 include "icurses/icurses.m";
@@ -143,4 +149,54 @@ navkind(k: int): int
 	if(k == Kpgup) return NavPageUp;
 	if(k == Kpgdown) return NavPageDown;
 	return NavNone;
+}
+
+cleartty(out: ref Sys->FD)
+{
+	if(out == nil)
+		return;
+	sys->fprint(out, "%c[2J", 27);
+	sys->fprint(out, "%c[H", 27);
+}
+
+resettty(out: ref Sys->FD)
+{
+	if(out == nil)
+		return;
+	sys->fprint(out, "%c[0m", 27);
+}
+
+hidecursor(out: ref Sys->FD)
+{
+	if(out == nil)
+		return;
+	sys->fprint(out, "%c[?25l", 27);
+}
+
+showcursor(out: ref Sys->FD)
+{
+	if(out == nil)
+		return;
+	sys->fprint(out, "%c[?25h", 27);
+}
+
+cup(out: ref Sys->FD, row, col: int)
+{
+	if(out == nil)
+		return;
+	sys->fprint(out, "%c[%d;%dH", 27, row, col);
+}
+
+sgr(out: ref Sys->FD, code: string)
+{
+	if(out == nil)
+		return;
+	sys->fprint(out, "%c[%sm", 27, code);
+}
+
+emitrun(out: ref Sys->FD, row, col: int, code, text: string)
+{
+	cup(out, row, col);
+	sgr(out, code);
+	sys->fprint(out, "%s", text);
 }
