@@ -1,6 +1,7 @@
 <../../../mkconfig
 
 TARG=\
+	canvas.dis\
 	icurses.dis\
 	keymap.dis\
 	msg.dis\
@@ -12,6 +13,7 @@ TARG=\
 MODULES=\
 
 SYSMODULES=\
+	icurses/canvas.m\
 	icurses/icurses.m\
 	icurses/keymap.m\
 	icurses/msg.m\

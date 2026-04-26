@@ -1,4 +1,5 @@
 include "sys.m";
+include "icurses/canvas.m";
 include "icurses/view.m";
 
 IcPaint: module
@@ -41,4 +42,10 @@ IcPaint: module
 	putc: fn(r: ref Renderer, x, y: int, ch, code: string);
 	puts: fn(r: ref Renderer, x, y: int, text, code: string);
 	fillrect: fn(r: ref Renderer, x, y, w, h: int, ch, code: string);
+
+	canvasnew: fn(id: string, w, h: int): int;
+	canvasclear: fn(id, ch, code: string): int;
+	canvasfill: fn(id: string, x, y, w, h: int, ch, code: string): int;
+	canvasputc: fn(id: string, x, y: int, ch, code: string): int;
+	canvasputs: fn(id: string, x, y: int, text, code: string): int;
 };

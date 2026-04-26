@@ -14,10 +14,12 @@ pressnode: fn(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg;
 hotkeymatch: fn(k: int, hotkey: string): int;
 findhotkeynode: fn(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node;
 findhotkey: fn(u: ref IcUi->Ui, k: int): ref IcView->Node;
-newstep: fn(done, key: int, m: IcMsg->Msg, status: string): IcUi->Step;
+newstep: fn(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step;
 focusok: fn(u: ref IcUi->Ui, n: ref IcView->Node): int;
 actionok: fn(u: ref IcUi->Ui, n: ref IcView->Node): int;
 ensurefocus: fn(u: ref IcUi->Ui): ref IcView->Node;
+keyproc: fn(u: ref IcUi->Ui);
+tickproc: fn(u: ref IcUi->Ui);
 
 init()
 {
@@ -69,6 +71,11 @@ new(out: ref Sys->FD, w, h: int): ref IcUi->Ui
 	u.lastmsg = msg->none();
 	u.running = 0;
 
+	u.keyc = chan of int;
+	u.tickc = chan of int;
+	u.tickms = 100;
+	u.ticks = 0;
+
 	return u;
 }
 
@@ -79,6 +86,17 @@ close(u: ref IcUi->Ui)
 
 	paint->close(u.renderer);
 	u.running = 0;
+}
+
+settick(u: ref IcUi->Ui, ms: int)
+{
+	if(u == nil)
+		return;
+
+	if(ms <= 0)
+		ms = 100;
+
+	u.tickms = ms;
 }
 
 start(u: ref IcUi->Ui): int
@@ -93,17 +111,63 @@ start(u: ref IcUi->Ui): int
 	}
 
 	u.running = 1;
+
+	spawn keyproc(u);
+	spawn tickproc(u);
+
 	draw(u);
 
 	return 0;
 }
 
-newstep(done, key: int, m: IcMsg->Msg, status: string): IcUi->Step
+keyproc(u: ref IcUi->Ui)
+{
+	k: int;
+
+	for(;;){
+		if(u == nil || !u.running)
+			return;
+
+		k = readkey();
+
+		if(u == nil || !u.running)
+			return;
+
+		u.keyc <-= k;
+
+		if(k < 0)
+			return;
+	}
+}
+
+tickproc(u: ref IcUi->Ui)
+{
+	t: int;
+
+	t = 0;
+
+	for(;;){
+		if(u == nil || !u.running)
+			return;
+
+		sys->sleep(u.tickms);
+
+		if(u == nil || !u.running)
+			return;
+
+		t++;
+		u.tickc <-= t;
+	}
+}
+
+newstep(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step
 {
 	s: IcUi->Step;
 
+	s.kind = kind;
 	s.done = done;
 	s.key = key;
+	s.tick = tick;
 	s.msg = m;
 	s.status = status;
 
@@ -112,34 +176,38 @@ newstep(done, key: int, m: IcMsg->Msg, status: string): IcUi->Step
 
 step(u: ref IcUi->Ui): IcUi->Step
 {
-	k: int;
 	m: IcMsg->Msg;
 
 	if(u == nil)
-		return newstep(1, -1, msg->none(), "");
+		return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), "");
 
 	if(!u.running)
-		return newstep(1, -1, msg->none(), u.status);
+		return newstep(IcUi->StepDone, 1, -1, u.ticks, msg->none(), u.status);
 
-	k = readkey();
+	alt {
+	k := <-u.keyc =>
+		if(k < 0){
+			u.running = 0;
+			return newstep(IcUi->StepDone, 1, k, u.ticks, msg->none(), u.status);
+		}
 
-	if(k < 0){
-		u.running = 0;
-		return newstep(1, k, msg->none(), u.status);
+		if(isquit(k)){
+			u.running = 0;
+			return newstep(IcUi->StepDone, 1, k, u.ticks, msg->none(), u.status);
+		}
+
+		m = handlekey(u, k);
+		draw(u);
+
+		if(!u.running)
+			return newstep(IcUi->StepDone, 1, k, u.ticks, m, u.status);
+
+		return newstep(IcUi->StepKey, 0, k, u.ticks, m, u.status);
+
+	t := <-u.tickc =>
+		u.ticks = t;
+		return newstep(IcUi->StepTick, 0, -1, t, msg->none(), u.status);
 	}
-
-	if(isquit(k)){
-		u.running = 0;
-		return newstep(1, k, msg->none(), u.status);
-	}
-
-	m = handlekey(u, k);
-	draw(u);
-
-	if(!u.running)
-		return newstep(1, k, m, u.status);
-
-	return newstep(0, k, m, u.status);
 }
 
 stop(u: ref IcUi->Ui)
@@ -147,6 +215,7 @@ stop(u: ref IcUi->Ui)
 	if(u == nil)
 		return;
 
+	u.running = 0;
 	closeinput();
 	close(u);
 }
@@ -254,6 +323,14 @@ button(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, label, hotkey, ta
 	return view->addchildnode(u.tree, parentid, n);
 }
 
+canvas(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int): int
+{
+	if(node(u, parentid, id, "canvas", x, y, w, h) < 0)
+		return -1;
+
+	return paint->canvasnew(id, w, h);
+}
+
 bindkey(u: ref IcUi->Ui, key, targetid, command: string): int
 {
 	if(u == nil || u.keymap == nil)
@@ -338,6 +415,30 @@ setfocus(u: ref IcUi->Ui, id: string): int
 		return -1;
 
 	return view->setfocus(u.tree, id);
+}
+
+canvasclear(u: ref IcUi->Ui, id, ch, code: string): int
+{
+	u = u;
+	return paint->canvasclear(id, ch, code);
+}
+
+canvasfill(u: ref IcUi->Ui, id: string, x, y, w, h: int, ch, code: string): int
+{
+	u = u;
+	return paint->canvasfill(id, x, y, w, h, ch, code);
+}
+
+canvasputc(u: ref IcUi->Ui, id: string, x, y: int, ch, code: string): int
+{
+	u = u;
+	return paint->canvasputc(id, x, y, ch, code);
+}
+
+canvasputs(u: ref IcUi->Ui, id: string, x, y: int, text, code: string): int
+{
+	u = u;
+	return paint->canvasputs(id, x, y, text, code);
 }
 
 draw(u: ref IcUi->Ui)

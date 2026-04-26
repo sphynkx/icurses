@@ -5,20 +5,25 @@ include "icurses/icurses.m";
 sys: Sys;
 ic: Icurses;
 view: IcView;
+canvas: IcCanvas;
 
 idx: fn(r: ref IcPaint->Renderer, x, y: int): int;
 inrange: fn(r: ref IcPaint->Renderer, x, y: int): int;
 sig: fn(ch, code: string): int;
 initcell: fn(ch, code: string): IcPaint->Cell;
 makecells: fn(n: int, ch, code: string): array of IcPaint->Cell;
+
 drawnode: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawwindow: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawbutton: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcontent: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawcanvas: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+
 hline: fn(r: ref IcPaint->Renderer, x, y, w: int, ch, code: string);
 vline: fn(r: ref IcPaint->Renderer, x, y, h: int, ch, code: string);
 samecell: fn(a, b: IcPaint->Cell): int;
 putslimit: fn(r: ref IcPaint->Renderer, x, y, maxw: int, text, code: string);
+
 wraptext: fn(text: string, width: int): array of string;
 appendline: fn(a: array of string, s: string): array of string;
 addword: fn(a: array of string, line, word: string, width: int): (array of string, string);
@@ -47,8 +52,13 @@ init()
 	if(view == nil)
 		raise "fail:load icview";
 
+	canvas = load IcCanvas IcCanvas->PATH;
+	if(canvas == nil)
+		raise "fail:load iccanvas";
+
 	ic->init();
 	view->init();
+	canvas->init();
 }
 
 sig(ch, code: string): int
@@ -437,6 +447,40 @@ drawcontent(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	}
 }
 
+drawcanvas(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	c: ref IcCanvas->Canvas;
+	cc: IcCanvas->Cell;
+	x, y, w, h, xx, yy: int;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	if(canvas == nil)
+		return;
+
+	c = canvas->find(n.id);
+	if(c == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	w = n.w;
+	h = n.h;
+
+	if(w > canvas->w(c))
+		w = canvas->w(c);
+	if(h > canvas->h(c))
+		h = canvas->h(c);
+
+	for(yy = 0; yy < h; yy++){
+		for(xx = 0; xx < w; xx++){
+			cc = canvas->cell(c, xx, yy);
+			putc(r, x + xx, y + yy, cc.ch, cc.code);
+		}
+	}
+}
+
 drawwindow(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 {
 	x, y, w, h, tx, style: int;
@@ -526,7 +570,9 @@ drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	if(!view->isvisibletree(t, n.id))
 		return;
 
-	if(n.kind == "window")
+	if(n.kind == "canvas")
+		drawcanvas(r, t, n);
+	else if(n.kind == "window")
 		drawwindow(r, t, n);
 	else if(n.kind == "button")
 		drawbutton(r, t, n);
@@ -600,4 +646,75 @@ flush(r: ref IcPaint->Renderer)
 	}
 
 	ic->resettty(r.out);
+}
+
+canvasnew(id: string, w, h: int): int
+{
+	if(canvas == nil)
+		return -1;
+
+	if(canvas->newcanvas(id, w, h) == nil)
+		return -1;
+
+	return 0;
+}
+
+canvasclear(id, ch, code: string): int
+{
+	c: ref IcCanvas->Canvas;
+
+	if(canvas == nil)
+		return -1;
+
+	c = canvas->find(id);
+	if(c == nil)
+		return -1;
+
+	canvas->clear(c, ch, code);
+	return 0;
+}
+
+canvasfill(id: string, x, y, w, h: int, ch, code: string): int
+{
+	c: ref IcCanvas->Canvas;
+
+	if(canvas == nil)
+		return -1;
+
+	c = canvas->find(id);
+	if(c == nil)
+		return -1;
+
+	canvas->fillrect(c, x, y, w, h, ch, code);
+	return 0;
+}
+
+canvasputc(id: string, x, y: int, ch, code: string): int
+{
+	c: ref IcCanvas->Canvas;
+
+	if(canvas == nil)
+		return -1;
+
+	c = canvas->find(id);
+	if(c == nil)
+		return -1;
+
+	canvas->putc(c, x, y, ch, code);
+	return 0;
+}
+
+canvasputs(id: string, x, y: int, text, code: string): int
+{
+	c: ref IcCanvas->Canvas;
+
+	if(canvas == nil)
+		return -1;
+
+	c = canvas->find(id);
+	if(c == nil)
+		return -1;
+
+	canvas->puts(c, x, y, text, code);
+	return 0;
 }
