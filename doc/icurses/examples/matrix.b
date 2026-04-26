@@ -16,14 +16,14 @@ msg: IcMsg;
 out: ref Sys->FD;
 
 #
-# Fallback terminal size used when /dev/conssize is unavailable
+# Fallback terminal size used when /dev/consinfo is unavailable
 # or reports an unusable geometry.
 #
 DefaultW: con 80;
 DefaultH: con 24;
 
 #
-# Runtime terminal geometry read from /dev/conssize.
+# Runtime terminal geometry read from /dev/consinfo.
 # statusy0/statusy1 reserve the last two rows for icurses status/help.
 #
 cw: int;
@@ -77,7 +77,7 @@ lastkey: int;
 panelvisible: int;
 
 #
-# Terminal capability information read from /dev/conssize.
+# Terminal capability information read from /dev/consinfo.
 #
 colors: int;
 truecolor: int;
@@ -114,7 +114,7 @@ sphase: array of int;
 build: fn(u: ref IcUi->Ui);
 
 #
-# Parse helpers for /dev/conssize.
+# Parse helpers for /dev/consinfo.
 #
 parseintat: fn(s: string, i: int): (int, int, int);
 paramint: fn(s, key: string, def: int): int;
@@ -283,7 +283,7 @@ paramstr(s, key, def: string): string
 }
 
 #
-# Read terminal geometry and capabilities from /dev/conssize.
+# Read terminal geometry and capabilities from /dev/consinfo.
 # Updates global cw/ch/status rows/colors/truecolor/conssource.
 # Falls back to DefaultW x DefaultH when the device is missing or invalid.
 #
@@ -303,7 +303,7 @@ readconsoleparams()
 	truecolor = 0;
 	conssource = "default";
 
-	fd = sys->open("/dev/conssize", Sys->OREAD);
+	fd = sys->open("/dev/consinfo", Sys->OREAD);
 	if(fd == nil)
 		return;
 
@@ -912,7 +912,7 @@ build(u: ref IcUi->Ui)
 	ui->window(u, root, "win.panel", PanelX, PanelY, PanelW, PanelH, "Animation control (press `h` to hide)");
 	ui->setframe(u, "win.panel", IcPaint->FrameDouble);
 	ui->setcontent(u, "win.panel",
-		"Sparse async stream model. Console params are read from /dev/conssize. c cycles ASCII/Cyrillic/CJK. t toggles truecolor.");
+		"Sparse async stream model. Console params are read from /dev/consinfo. c cycles ASCII/Cyrillic/CJK. t toggles truecolor.");
 	ui->setscroll(u, "win.panel", IcView->ScrollClip, 0);
 
 	ui->button(u, "win.panel", "btn.pause", 2, 5, 11, 1, "Pause", "", "app", "app.pause");
