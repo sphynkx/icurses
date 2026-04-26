@@ -1,9 +1,3 @@
-# WARNING
-# On this target/runtime, internal helper functions in this module may crash
-# if they create local heap-managed values (for example string, array, list, ref).
-# Keep such allocations in exported/top-level call functions and pass the values
-# into helpers as arguments instead.
-
 implement Icurses;
 
 include "icurses/icurses.m";
