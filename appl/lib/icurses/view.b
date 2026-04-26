@@ -3,6 +3,7 @@ implement IcView;
 include "icurses/view.m";
 
 appendchild: fn(a: array of string, s: string): array of string;
+prependchild: fn(a: array of string, s: string): array of string;
 removechildid: fn(a: array of string, s: string): array of string;
 
 appendnode: fn(a: array of ref IcView->Node, n: ref IcView->Node): array of ref IcView->Node;
@@ -15,6 +16,12 @@ dropnode: fn(t: ref IcView->Tree, n: ref IcView->Node);
 
 isdescendant: fn(t: ref IcView->Tree, id, ancestorid: string): int;
 
+collectfocus: fn(t: ref IcView->Tree, id: string, a: array of string): array of string;
+focusableok: fn(t: ref IcView->Tree, n: ref IcView->Node): int;
+focuslist: fn(t: ref IcView->Tree): array of string;
+
+findhotkeynode: fn(t: ref IcView->Tree, id, hotkey: string): ref IcView->Node;
+
 init()
 {
 }
@@ -23,6 +30,9 @@ appendchild(a: array of string, s: string): array of string
 {
 	n, i: int;
 	b: array of string;
+
+	if(s == "")
+		return a;
 
 	if(a == nil){
 		b = array[1] of string;
@@ -35,6 +45,29 @@ appendchild(a: array of string, s: string): array of string
 	for(i = 0; i < n; i++)
 		b[i] = a[i];
 	b[n] = s;
+	return b;
+}
+
+prependchild(a: array of string, s: string): array of string
+{
+	n, i: int;
+	b: array of string;
+
+	if(s == "")
+		return a;
+
+	if(a == nil){
+		b = array[1] of string;
+		b[0] = s;
+		return b;
+	}
+
+	n = len a;
+	b = array[n + 1] of string;
+	b[0] = s;
+	for(i = 0; i < n; i++)
+		b[i + 1] = a[i];
+
 	return b;
 }
 
@@ -128,6 +161,18 @@ newroot(): ref IcView->Node
 	v.id = "root";
 	v.kind = "root";
 	v.parentid = "";
+	v.text = "";
+	v.content = "";
+	v.hotkey = "";
+	v.targetid = "";
+	v.command = "";
+	v.sarg = "";
+	v.iarg0 = 0;
+	v.iarg1 = 0;
+	v.iarg2 = 0;
+	v.frame = IcView->FrameDefault;
+	v.scroll = IcView->ScrollClip;
+	v.scrollpos = 0;
 	v.x = 0;
 	v.y = 0;
 	v.w = 0;
@@ -148,6 +193,18 @@ newnode(id, kind, parentid: string, x, y, w, h: int): ref IcView->Node
 	v.id = id;
 	v.kind = kind;
 	v.parentid = parentid;
+	v.text = "";
+	v.content = "";
+	v.hotkey = "";
+	v.targetid = "";
+	v.command = "";
+	v.sarg = "";
+	v.iarg0 = 0;
+	v.iarg1 = 0;
+	v.iarg2 = 0;
+	v.frame = IcView->FrameDefault;
+	v.scroll = IcView->ScrollClip;
+	v.scrollpos = 0;
 	v.x = x;
 	v.y = y;
 	v.w = w;
@@ -207,11 +264,121 @@ parentid(v: ref IcView->Node): string
 	return v.parentid;
 }
 
+settext(v: ref IcView->Node, text: string)
+{
+	if(v == nil)
+		return;
+	v.text = text;
+	v.dirty = 1;
+}
+
+gettext(v: ref IcView->Node): string
+{
+	if(v == nil)
+		return "";
+	return v.text;
+}
+
+setcontent(v: ref IcView->Node, content: string)
+{
+	if(v == nil)
+		return;
+	v.content = content;
+	v.dirty = 1;
+}
+
+getcontent(v: ref IcView->Node): string
+{
+	if(v == nil)
+		return "";
+	return v.content;
+}
+
+sethotkey(v: ref IcView->Node, hotkey: string)
+{
+	if(v == nil)
+		return;
+	v.hotkey = hotkey;
+}
+
+gethotkey(v: ref IcView->Node): string
+{
+	if(v == nil)
+		return "";
+	return v.hotkey;
+}
+
+setaction(v: ref IcView->Node, targetid, command: string)
+{
+	if(v == nil)
+		return;
+	v.targetid = targetid;
+	v.command = command;
+}
+
+setargs(v: ref IcView->Node, sarg: string, iarg0, iarg1, iarg2: int)
+{
+	if(v == nil)
+		return;
+	v.sarg = sarg;
+	v.iarg0 = iarg0;
+	v.iarg1 = iarg1;
+	v.iarg2 = iarg2;
+}
+
+setframe(v: ref IcView->Node, frame: int)
+{
+	if(v == nil)
+		return;
+	v.frame = frame;
+	v.dirty = 1;
+}
+
+getframe(v: ref IcView->Node): int
+{
+	if(v == nil)
+		return IcView->FrameDefault;
+	return v.frame;
+}
+
+setscroll(v: ref IcView->Node, scroll: int)
+{
+	if(v == nil)
+		return;
+	v.scroll = scroll;
+	v.dirty = 1;
+}
+
+getscroll(v: ref IcView->Node): int
+{
+	if(v == nil)
+		return IcView->ScrollClip;
+	return v.scroll;
+}
+
+setscrollpos(v: ref IcView->Node, scrollpos: int)
+{
+	if(v == nil)
+		return;
+	if(scrollpos < 0)
+		scrollpos = 0;
+	v.scrollpos = scrollpos;
+	v.dirty = 1;
+}
+
+getscrollpos(v: ref IcView->Node): int
+{
+	if(v == nil)
+		return 0;
+	return v.scrollpos;
+}
+
 setparent(v: ref IcView->Node, parentid: string)
 {
 	if(v == nil)
 		return;
 	v.parentid = parentid;
+	v.dirty = 1;
 }
 
 setbounds(v: ref IcView->Node, x, y, w, h: int)
@@ -290,6 +457,7 @@ enable(v: ref IcView->Node)
 	if(v == nil)
 		return;
 	v.enabled = 1;
+	v.dirty = 1;
 }
 
 disable(v: ref IcView->Node)
@@ -297,6 +465,7 @@ disable(v: ref IcView->Node)
 	if(v == nil)
 		return;
 	v.enabled = 0;
+	v.dirty = 1;
 }
 
 isenabled(v: ref IcView->Node): int
@@ -311,6 +480,7 @@ setfocusable(v: ref IcView->Node, focusable: int)
 	if(v == nil)
 		return;
 	v.focusable = focusable;
+	v.dirty = 1;
 }
 
 isfocusable(v: ref IcView->Node): int
@@ -408,6 +578,9 @@ addnode(t: ref IcView->Tree, n: ref IcView->Node): int
 	if(find(t, n.id) != nil)
 		return -1;
 
+	if(n.children == nil)
+		n.children = array[0] of string;
+
 	t.nodes = appendnode(t.nodes, n);
 	return 0;
 }
@@ -430,7 +603,6 @@ addchildnode(t: ref IcView->Tree, parentid: string, n: ref IcView->Node): int
 		return -1;
 
 	n.parentid = parentid;
-	n.children = n.children;
 	if(n.children == nil)
 		n.children = array[0] of string;
 
@@ -490,7 +662,6 @@ reparent(t: ref IcView->Tree, id, parentid: string): int
 	if(newp == nil)
 		return -1;
 
-	# Do not allow cycles: a node cannot be moved under its own descendant.
 	if(isdescendant(t, parentid, id))
 		return -1;
 
@@ -543,16 +714,71 @@ removetree(t: ref IcView->Tree, id: string): int
 	if(p != nil)
 		removechild(p, id);
 
-	dropnode(t, n);
-
-	if(t.focusid == id)
+	if(t.focusid == id || isdescendant(t, t.focusid, id))
 		t.focusid = "";
-	if(t.activegroupid == id)
+	if(t.activegroupid == id || isdescendant(t, t.activegroupid, id))
 		t.activegroupid = "";
-	if(t.activewindowid == id)
+	if(t.activewindowid == id || isdescendant(t, t.activewindowid, id))
 		t.activewindowid = "";
 
+	dropnode(t, n);
+
 	return 0;
+}
+
+bringtofront(t: ref IcView->Tree, id: string): int
+{
+	n, p: ref IcView->Node;
+
+	n = find(t, id);
+	if(n == nil)
+		return -1;
+
+	p = find(t, n.parentid);
+	if(p == nil)
+		return -1;
+
+	p.children = removechildid(p.children, id);
+	p.children = appendchild(p.children, id);
+	p.dirty = 1;
+	n.dirty = 1;
+
+	return 0;
+}
+
+sendtoback(t: ref IcView->Tree, id: string): int
+{
+	n, p: ref IcView->Node;
+
+	n = find(t, id);
+	if(n == nil)
+		return -1;
+
+	p = find(t, n.parentid);
+	if(p == nil)
+		return -1;
+
+	p.children = removechildid(p.children, id);
+	p.children = prependchild(p.children, id);
+	p.dirty = 1;
+	n.dirty = 1;
+
+	return 0;
+}
+
+activatewindow(t: ref IcView->Tree, id: string): int
+{
+	n: ref IcView->Node;
+
+	if(t == nil || id == "")
+		return -1;
+
+	n = find(t, id);
+	if(n == nil)
+		return -1;
+
+	t.activewindowid = id;
+	return bringtofront(t, id);
 }
 
 absx(t: ref IcView->Tree, n: ref IcView->Node): int
@@ -711,6 +937,7 @@ enablekids(t: ref IcView->Tree, id: string, enabled: int)
 		return;
 
 	n.enabled = enabled;
+	n.dirty = 1;
 
 	for(i = 0; i < len n.children; i++){
 		cid = n.children[i];
@@ -746,8 +973,6 @@ movetreeby(t: ref IcView->Tree, id: string, dx, dy: int)
 	if(n == nil)
 		return;
 
-	# Local-coordinate semantics:
-	# moving a subtree means moving only its root node.
 	moveby(n, dx, dy);
 }
 
@@ -770,4 +995,191 @@ countkids(t: ref IcView->Tree, id: string): int
 subtreecount(t: ref IcView->Tree, id: string): int
 {
 	return countkids(t, id);
+}
+
+focusableok(t: ref IcView->Tree, n: ref IcView->Node): int
+{
+	if(t == nil || n == nil)
+		return 0;
+
+	if(!n.focusable)
+		return 0;
+
+	if(!isvisibletree(t, n.id))
+		return 0;
+
+	if(!isenabledtree(t, n.id))
+		return 0;
+
+	return 1;
+}
+
+collectfocus(t: ref IcView->Tree, id: string, a: array of string): array of string
+{
+	n, c: ref IcView->Node;
+	i: int;
+
+	n = find(t, id);
+	if(n == nil)
+		return a;
+
+	if(focusableok(t, n))
+		a = appendchild(a, n.id);
+
+	for(i = 0; i < len n.children; i++){
+		c = find(t, n.children[i]);
+		if(c != nil)
+			a = collectfocus(t, c.id, a);
+	}
+
+	return a;
+}
+
+focuslist(t: ref IcView->Tree): array of string
+{
+	if(t == nil)
+		return array[0] of string;
+
+	return collectfocus(t, t.rootid, array[0] of string);
+}
+
+setfocus(t: ref IcView->Tree, id: string): int
+{
+	n: ref IcView->Node;
+
+	if(t == nil)
+		return -1;
+
+	n = find(t, id);
+	if(!focusableok(t, n))
+		return -1;
+
+	t.focusid = id;
+
+	n = find(t, n.parentid);
+	while(n != nil){
+		if(n.kind == "window"){
+			activatewindow(t, n.id);
+			break;
+		}
+		n = find(t, n.parentid);
+	}
+
+	return 0;
+}
+
+clearfocus(t: ref IcView->Tree)
+{
+	if(t == nil)
+		return;
+	t.focusid = "";
+}
+
+focusid(t: ref IcView->Tree): string
+{
+	if(t == nil)
+		return "";
+	return t.focusid;
+}
+
+focusnode(t: ref IcView->Tree): ref IcView->Node
+{
+	if(t == nil)
+		return nil;
+	return find(t, t.focusid);
+}
+
+nextfocus(t: ref IcView->Tree): string
+{
+	a: array of string;
+	i, n, cur: int;
+
+	if(t == nil)
+		return "";
+
+	a = focuslist(t);
+	if(a == nil || len a == 0){
+		t.focusid = "";
+		return "";
+	}
+
+	n = len a;
+	cur = -1;
+
+	for(i = 0; i < n; i++){
+		if(a[i] == t.focusid){
+			cur = i;
+			break;
+		}
+	}
+
+	if(cur < 0)
+		setfocus(t, a[0]);
+	else
+		setfocus(t, a[(cur + 1) % n]);
+
+	return t.focusid;
+}
+
+prevfocus(t: ref IcView->Tree): string
+{
+	a: array of string;
+	i, n, cur: int;
+
+	if(t == nil)
+		return "";
+
+	a = focuslist(t);
+	if(a == nil || len a == 0){
+		t.focusid = "";
+		return "";
+	}
+
+	n = len a;
+	cur = -1;
+
+	for(i = 0; i < n; i++){
+		if(a[i] == t.focusid){
+			cur = i;
+			break;
+		}
+	}
+
+	if(cur < 0)
+		setfocus(t, a[0]);
+	else if(cur == 0)
+		setfocus(t, a[n - 1]);
+	else
+		setfocus(t, a[cur - 1]);
+
+	return t.focusid;
+}
+
+findhotkeynode(t: ref IcView->Tree, id, hotkey: string): ref IcView->Node
+{
+	n, r: ref IcView->Node;
+	i: int;
+
+	n = find(t, id);
+	if(n == nil)
+		return nil;
+
+	for(i = len n.children - 1; i >= 0; i--){
+		r = findhotkeynode(t, n.children[i], hotkey);
+		if(r != nil)
+			return r;
+	}
+
+	if(n.hotkey == hotkey && isvisibletree(t, n.id) && isenabledtree(t, n.id))
+		return n;
+
+	return nil;
+}
+
+findhotkey(t: ref IcView->Tree, hotkey: string): ref IcView->Node
+{
+	if(t == nil || hotkey == "")
+		return nil;
+
+	return findhotkeynode(t, t.rootid, hotkey);
 }

@@ -1,0 +1,603 @@
+implement IcPaint;
+
+include "icurses/icurses.m";
+
+sys: Sys;
+ic: Icurses;
+view: IcView;
+
+idx: fn(r: ref IcPaint->Renderer, x, y: int): int;
+inrange: fn(r: ref IcPaint->Renderer, x, y: int): int;
+sig: fn(ch, code: string): int;
+initcell: fn(ch, code: string): IcPaint->Cell;
+makecells: fn(n: int, ch, code: string): array of IcPaint->Cell;
+drawnode: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawwindow: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawbutton: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawcontent: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+hline: fn(r: ref IcPaint->Renderer, x, y, w: int, ch, code: string);
+vline: fn(r: ref IcPaint->Renderer, x, y, h: int, ch, code: string);
+samecell: fn(a, b: IcPaint->Cell): int;
+putslimit: fn(r: ref IcPaint->Renderer, x, y, maxw: int, text, code: string);
+wraptext: fn(text: string, width: int): array of string;
+appendline: fn(a: array of string, s: string): array of string;
+addword: fn(a: array of string, line, word: string, width: int): (array of string, string);
+framechars: fn(style: int): array of string;
+
+CodeNormal: con "0";
+CodeWindow: con "0;37;44";
+CodeFrame:  con "1;37;44";
+CodeTitle:  con "1;33;44";
+CodeButton: con "1;30;46";
+CodeFocus:  con "1;33;41";
+CodeStatus: con "1;30;47";
+CodeScroll: con "1;33;44";
+
+init()
+{
+	sys = load Sys Sys->PATH;
+	if(sys == nil)
+		raise "fail:load sys";
+
+	ic = load Icurses Icurses->PATH;
+	if(ic == nil)
+		raise "fail:load icurses";
+
+	view = load IcView IcView->PATH;
+	if(view == nil)
+		raise "fail:load icview";
+
+	ic->init();
+	view->init();
+}
+
+sig(ch, code: string): int
+{
+	h, i: int;
+
+	h = 0;
+	for(i = 0; i < len ch; i++)
+		h = (h * 33) ^ int ch[i];
+	for(i = 0; i < len code; i++)
+		h = (h * 33) ^ int code[i];
+
+	return h;
+}
+
+initcell(ch, code: string): IcPaint->Cell
+{
+	c: IcPaint->Cell;
+
+	c.ch = ch;
+	c.code = code;
+	c.sig = sig(ch, code);
+
+	return c;
+}
+
+makecells(n: int, ch, code: string): array of IcPaint->Cell
+{
+	a: array of IcPaint->Cell;
+	i: int;
+
+	if(n < 0)
+		n = 0;
+
+	a = array[n] of IcPaint->Cell;
+	for(i = 0; i < n; i++)
+		a[i] = initcell(ch, code);
+
+	return a;
+}
+
+new(out: ref Sys->FD, w, h: int): ref IcPaint->Renderer
+{
+	r: ref IcPaint->Renderer;
+	n: int;
+
+	if(w <= 0)
+		w = 1;
+	if(h <= 0)
+		h = 1;
+
+	r = ref IcPaint->Renderer;
+	r.out = out;
+	r.w = w;
+	r.h = h;
+	r.framestyle = IcPaint->FrameSingle;
+
+	n = w * h;
+
+	r.front = makecells(n, "\001", "");
+	r.back = makecells(n, " ", CodeNormal);
+
+	if(out != nil){
+		ic->resettty(out);
+		ic->cleartty(out);
+		ic->hidecursor(out);
+	}
+
+	return r;
+}
+
+close(r: ref IcPaint->Renderer)
+{
+	if(r == nil || r.out == nil)
+		return;
+
+	ic->showcursor(r.out);
+	ic->resettty(r.out);
+}
+
+setframestyle(r: ref IcPaint->Renderer, style: int)
+{
+	if(r == nil)
+		return;
+	r.framestyle = style;
+}
+
+idx(r: ref IcPaint->Renderer, x, y: int): int
+{
+	return y * r.w + x;
+}
+
+inrange(r: ref IcPaint->Renderer, x, y: int): int
+{
+	if(r == nil)
+		return 0;
+	if(x < 0 || y < 0)
+		return 0;
+	if(x >= r.w || y >= r.h)
+		return 0;
+	return 1;
+}
+
+samecell(a, b: IcPaint->Cell): int
+{
+	if(a.sig != b.sig)
+		return 0;
+	if(a.ch != b.ch)
+		return 0;
+	if(a.code != b.code)
+		return 0;
+	return 1;
+}
+
+clear(r: ref IcPaint->Renderer)
+{
+	i, n: int;
+	c: IcPaint->Cell;
+
+	if(r == nil || r.back == nil)
+		return;
+
+	c = initcell(" ", CodeNormal);
+	n = len r.back;
+	for(i = 0; i < n; i++)
+		r.back[i] = c;
+}
+
+putc(r: ref IcPaint->Renderer, x, y: int, ch, code: string)
+{
+	i: int;
+
+	if(!inrange(r, x, y))
+		return;
+
+	if(ch == "")
+		ch = " ";
+	if(code == "")
+		code = CodeNormal;
+
+	i = idx(r, x, y);
+	r.back[i] = initcell(ch, code);
+}
+
+puts(r: ref IcPaint->Renderer, x, y: int, text, code: string)
+{
+	i: int;
+
+	if(r == nil || text == "")
+		return;
+
+	for(i = 0; i < len text; i++)
+		putc(r, x + i, y, text[i:i+1], code);
+}
+
+putslimit(r: ref IcPaint->Renderer, x, y, maxw: int, text, code: string)
+{
+	i, n: int;
+
+	if(r == nil || text == "" || maxw <= 0)
+		return;
+
+	n = len text;
+	if(n > maxw)
+		n = maxw;
+
+	for(i = 0; i < n; i++)
+		putc(r, x + i, y, text[i:i+1], code);
+}
+
+fillrect(r: ref IcPaint->Renderer, x, y, w, h: int, ch, code: string)
+{
+	xx, yy: int;
+
+	if(r == nil)
+		return;
+
+	for(yy = 0; yy < h; yy++){
+		for(xx = 0; xx < w; xx++)
+			putc(r, x + xx, y + yy, ch, code);
+	}
+}
+
+hline(r: ref IcPaint->Renderer, x, y, w: int, ch, code: string)
+{
+	i: int;
+
+	for(i = 0; i < w; i++)
+		putc(r, x + i, y, ch, code);
+}
+
+vline(r: ref IcPaint->Renderer, x, y, h: int, ch, code: string)
+{
+	i: int;
+
+	for(i = 0; i < h; i++)
+		putc(r, x, y + i, ch, code);
+}
+
+framechars(style: int): array of string
+{
+	a: array of string;
+
+	a = array[6] of string;
+
+	if(style == IcPaint->FrameDouble){
+		a[0] = "═";
+		a[1] = "║";
+		a[2] = "╔";
+		a[3] = "╗";
+		a[4] = "╚";
+		a[5] = "╝";
+		return a;
+	}
+
+	if(style == IcPaint->FrameSingle){
+		a[0] = "─";
+		a[1] = "│";
+		a[2] = "┌";
+		a[3] = "┐";
+		a[4] = "└";
+		a[5] = "┘";
+		return a;
+	}
+
+	a[0] = "-";
+	a[1] = "|";
+	a[2] = "+";
+	a[3] = "+";
+	a[4] = "+";
+	a[5] = "+";
+	return a;
+}
+
+appendline(a: array of string, s: string): array of string
+{
+	b: array of string;
+	i, n: int;
+
+	if(a == nil){
+		b = array[1] of string;
+		b[0] = s;
+		return b;
+	}
+
+	n = len a;
+	b = array[n + 1] of string;
+	for(i = 0; i < n; i++)
+		b[i] = a[i];
+	b[n] = s;
+
+	return b;
+}
+
+addword(a: array of string, line, word: string, width: int): (array of string, string)
+{
+	part: string;
+
+	if(width <= 0)
+		return (a, "");
+
+	if(word == "")
+		return (a, line);
+
+	if(line == ""){
+		while(len word > width){
+			part = word[0:width];
+			a = appendline(a, part);
+			word = word[width:];
+		}
+		return (a, word);
+	}
+
+	if(len line + 1 + len word <= width)
+		return (a, line + " " + word);
+
+	a = appendline(a, line);
+	line = "";
+
+	while(len word > width){
+		part = word[0:width];
+		a = appendline(a, part);
+		word = word[width:];
+	}
+
+	return (a, word);
+}
+
+wraptext(text: string, width: int): array of string
+{
+	a: array of string;
+	line, word: string;
+	i: int;
+
+	if(width <= 0)
+		return array[0] of string;
+
+	a = array[0] of string;
+	line = "";
+	word = "";
+
+	for(i = 0; i < len text; i++){
+		if(text[i] == '\n'){
+			(a, line) = addword(a, line, word, width);
+			word = "";
+			a = appendline(a, line);
+			line = "";
+			continue;
+		}
+
+		if(text[i] == ' ' || text[i] == '\t'){
+			(a, line) = addword(a, line, word, width);
+			word = "";
+			continue;
+		}
+
+		word += text[i:i+1];
+	}
+
+	(a, line) = addword(a, line, word, width);
+
+	if(line != "")
+		a = appendline(a, line);
+
+	return a;
+}
+
+drawcontent(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, w, h, cw, ch, i, start, total, barx, thumb: int;
+	lines: array of string;
+	content: string;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	content = view->getcontent(n);
+	if(content == "")
+		return;
+
+	x = view->absx(t, n) + 1;
+	y = view->absy(t, n) + 1;
+	w = n.w - 2;
+	h = n.h - 2;
+
+	if(w <= 0 || h <= 0)
+		return;
+
+	cw = w;
+	ch = h;
+
+	if(n.scroll == IcView->ScrollBar && cw > 1)
+		cw--;
+
+	lines = wraptext(content, cw);
+	total = len lines;
+
+	start = 0;
+	if(n.scroll != IcView->ScrollClip)
+		start = n.scrollpos;
+
+	if(start < 0)
+		start = 0;
+	if(start >= total)
+		start = total - 1;
+	if(start < 0)
+		start = 0;
+
+	for(i = 0; i < ch; i++){
+		if(start + i >= total)
+			break;
+		putslimit(r, x, y + i, cw, lines[start + i], CodeWindow);
+	}
+
+	if(n.scroll == IcView->ScrollBar && total > ch){
+		barx = x + cw;
+		vline(r, barx, y, ch, "│", CodeScroll);
+		thumb = y;
+		if(total > 0)
+			thumb = y + (start * ch) / total;
+		if(thumb < y)
+			thumb = y;
+		if(thumb >= y + ch)
+			thumb = y + ch - 1;
+		putc(r, barx, thumb, "█", CodeScroll);
+	}
+}
+
+drawwindow(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, w, h, tx, style: int;
+	title: string;
+	fc: array of string;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	w = n.w;
+	h = n.h;
+
+	if(w < 4 || h < 3)
+		return;
+
+	style = r.framestyle;
+	if(n.frame != IcView->FrameDefault)
+		style = n.frame;
+
+	fc = framechars(style);
+
+	fillrect(r, x, y, w, h, " ", CodeWindow);
+
+	hline(r, x, y, w, fc[0], CodeFrame);
+	hline(r, x, y + h - 1, w, fc[0], CodeFrame);
+	vline(r, x, y, h, fc[1], CodeFrame);
+	vline(r, x + w - 1, y, h, fc[1], CodeFrame);
+
+	putc(r, x, y, fc[2], CodeFrame);
+	putc(r, x + w - 1, y, fc[3], CodeFrame);
+	putc(r, x, y + h - 1, fc[4], CodeFrame);
+	putc(r, x + w - 1, y + h - 1, fc[5], CodeFrame);
+
+	title = view->gettext(n);
+	if(title != ""){
+		tx = x + 2;
+		if(tx < x + w - 1)
+			putslimit(r, tx, y, w - 4, title, CodeTitle);
+	}
+
+	drawcontent(r, t, n);
+}
+
+drawbutton(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, w: int;
+	label, s, code: string;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	w = n.w;
+
+	if(w <= 0)
+		w = len view->gettext(n) + 4;
+
+	label = view->gettext(n);
+	if(label == "")
+		label = n.id;
+
+	if(n.hotkey != "")
+		s = "[" + n.hotkey + "] " + label;
+	else
+		s = "[ " + label + " ]";
+
+	if(view->focusid(t) == n.id)
+		code = CodeFocus;
+	else
+		code = CodeButton;
+
+	fillrect(r, x, y, w, 1, " ", code);
+	putslimit(r, x, y, w, s, code);
+}
+
+drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	i: int;
+	c: ref IcView->Node;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	if(!view->isvisibletree(t, n.id))
+		return;
+
+	if(n.kind == "window")
+		drawwindow(r, t, n);
+	else if(n.kind == "button")
+		drawbutton(r, t, n);
+
+	for(i = 0; i < len n.children; i++){
+		c = view->find(t, n.children[i]);
+		drawnode(r, t, c);
+	}
+}
+
+drawtree(r: ref IcPaint->Renderer, t: ref IcView->Tree)
+{
+	if(r == nil || t == nil)
+		return;
+
+	drawnode(r, t, view->root(t));
+}
+
+status(r: ref IcPaint->Renderer, row: int, text: string)
+{
+	if(r == nil)
+		return;
+
+	if(row < 0 || row >= r.h)
+		return;
+
+	fillrect(r, 0, row, r.w, 1, " ", CodeStatus);
+	putslimit(r, 0, row, r.w, text, CodeStatus);
+}
+
+flush(r: ref IcPaint->Renderer)
+{
+	x, y, i, j, start: int;
+	code, s: string;
+
+	if(r == nil || r.out == nil)
+		return;
+
+	for(y = 0; y < r.h; y++){
+		x = 0;
+		while(x < r.w){
+			i = idx(r, x, y);
+
+			if(samecell(r.front[i], r.back[i])){
+				x++;
+				continue;
+			}
+
+			start = x;
+			code = r.back[i].code;
+			s = "";
+
+			while(x < r.w){
+				j = idx(r, x, y);
+
+				if(samecell(r.front[j], r.back[j]))
+					break;
+
+				if(r.back[j].code != code)
+					break;
+
+				s += r.back[j].ch;
+				r.front[j] = r.back[j];
+				x++;
+			}
+
+			ic->cup(r.out, y + 1, start + 1);
+			ic->sgr(r.out, code);
+			sys->fprint(r.out, "%s", s);
+		}
+	}
+
+	ic->resettty(r.out);
+}

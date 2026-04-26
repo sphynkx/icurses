@@ -1,4 +1,4 @@
-include "sys.m";
+include "icurses/ui.m";
 
 Icurses: module
 {

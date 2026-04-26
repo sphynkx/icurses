@@ -2,22 +2,22 @@
 
 TARG=\
 	icurses.dis\
-#	theme.dis\
-#	screen.dis\
-#	button.dis\
-#	dialog.dis\
+	keymap.dis\
+	msg.dis\
+	paint.dis\
 	text.dis\
+	ui.dis\
 	view.dis\
 
 MODULES=\
 
 SYSMODULES=\
 	icurses/icurses.m\
-#	icurses/theme.m\
-#	icurses/screen.m\
-#	icurses/button.m\
-#	icurses/dialog.m\
+	icurses/keymap.m\
+	icurses/msg.m\
+	icurses/paint.m\
 	icurses/text.m\
+	icurses/ui.m\
 	icurses/view.m\
 
 DISBIN=$ROOT/dis/lib/icurses

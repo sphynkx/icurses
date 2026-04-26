@@ -2,13 +2,33 @@ IcView: module
 {
 	PATH: con "/dis/lib/icurses/view.dis";
 
+	ScrollClip: con 0;
+	ScrollNoBar: con 1;
+	ScrollBar: con 2;
+
+	FrameDefault: con -1;
+
 	Node: adt
 	{
 		id:         string;
 		kind:       string;
 		parentid:   string;
 
-		# Local-to-parent geometry.
+		text:       string;
+		content:    string;
+
+		hotkey:     string;
+		targetid:   string;
+		command:    string;
+		sarg:       string;
+		iarg0:      int;
+		iarg1:      int;
+		iarg2:      int;
+
+		frame:      int;
+		scroll:     int;
+		scrollpos:  int;
+
 		x:          int;
 		y:          int;
 		w:          int;
@@ -19,8 +39,6 @@ IcView: module
 		focusable:  int;
 		dirty:      int;
 
-		# Ordered child list. Order is later useful for paint order,
-		# tab order and simple z-order.
 		children:   array of string;
 	};
 
@@ -35,7 +53,6 @@ IcView: module
 		rootid:         string;
 		nodes:          array of ref Node;
 
-		# Reserved core context state for later framework layers.
 		focusid:        string;
 		activegroupid:  string;
 		activewindowid: string;
@@ -52,6 +69,26 @@ IcView: module
 	id: fn(v: ref Node): string;
 	kind: fn(v: ref Node): string;
 	parentid: fn(v: ref Node): string;
+
+	settext: fn(v: ref Node, text: string);
+	gettext: fn(v: ref Node): string;
+
+	setcontent: fn(v: ref Node, content: string);
+	getcontent: fn(v: ref Node): string;
+
+	sethotkey: fn(v: ref Node, hotkey: string);
+	gethotkey: fn(v: ref Node): string;
+
+	setaction: fn(v: ref Node, targetid, command: string);
+	setargs: fn(v: ref Node, sarg: string, iarg0, iarg1, iarg2: int);
+
+	setframe: fn(v: ref Node, frame: int);
+	getframe: fn(v: ref Node): int;
+
+	setscroll: fn(v: ref Node, scroll: int);
+	getscroll: fn(v: ref Node): int;
+	setscrollpos: fn(v: ref Node, scrollpos: int);
+	getscrollpos: fn(v: ref Node): int;
 
 	setparent: fn(v: ref Node, parentid: string);
 	setbounds: fn(v: ref Node, x, y, w, h: int);
@@ -88,6 +125,10 @@ IcView: module
 	reparent: fn(t: ref Tree, id, parentid: string): int;
 	removetree: fn(t: ref Tree, id: string): int;
 
+	bringtofront: fn(t: ref Tree, id: string): int;
+	sendtoback: fn(t: ref Tree, id: string): int;
+	activatewindow: fn(t: ref Tree, id: string): int;
+
 	absx: fn(t: ref Tree, n: ref Node): int;
 	absy: fn(t: ref Tree, n: ref Node): int;
 	abspos: fn(t: ref Tree, id: string): Pos;
@@ -100,10 +141,16 @@ IcView: module
 	enabletree: fn(t: ref Tree, id: string);
 	disabletree: fn(t: ref Tree, id: string);
 
-	# Move subtree logically: only the subtree root local position changes.
-	# Descendant local coordinates stay unchanged; their absolute positions
-	# change through parent-chain resolution.
 	movetreeby: fn(t: ref Tree, id: string, dx, dy: int);
 
 	subtreecount: fn(t: ref Tree, id: string): int;
+
+	setfocus: fn(t: ref Tree, id: string): int;
+	clearfocus: fn(t: ref Tree);
+	focusid: fn(t: ref Tree): string;
+	focusnode: fn(t: ref Tree): ref Node;
+	nextfocus: fn(t: ref Tree): string;
+	prevfocus: fn(t: ref Tree): string;
+
+	findhotkey: fn(t: ref Tree, hotkey: string): ref Node;
 };
