@@ -15,6 +15,7 @@ IcTheme: module
 	AttrFocus: con 5;
 	AttrStatus: con 6;
 	AttrScroll: con 7;
+	AttrShadow: con 8;
 
 	#
 	# Generic effect attributes for demos/games/animation layers.

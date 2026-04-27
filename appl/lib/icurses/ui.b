@@ -344,6 +344,24 @@ window(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string): i
 	return view->addchildnode(u.tree, parentid, n);
 }
 
+shadowwindow(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string, dx, dy: int): int
+{
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	if(w < 4)
+		w = 4;
+	if(h < 3)
+		h = 3;
+
+	if(dx != 0 || dy != 0){
+		if(node(u, parentid, id + ".shadow", "shadow", x + dx, y + dy, w, h) < 0)
+			return -1;
+	}
+
+	return window(u, parentid, id, x, y, w, h, title);
+}
+
 button(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, label, hotkey, targetid, command: string): int
 {
 	n: ref IcView->Node;

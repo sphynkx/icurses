@@ -66,6 +66,7 @@ IcUi: module
 	group: fn(u: ref Ui, parentid, id: string, x, y, w, h: int): int;
 	label: fn(u: ref Ui, parentid, id: string, x, y, w: int, text: string): int;
 	window: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, title: string): int;
+	shadowwindow: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, title: string, dx, dy: int): int;
 	button: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, label, hotkey, targetid, command: string): int;
 	canvas: fn(u: ref Ui, parentid, id: string, x, y, w, h: int): int;
 
@@ -81,39 +82,9 @@ IcUi: module
 	setspinner: fn(u: ref Ui, id: string, frame: int): int;
 	tickspinner: fn(u: ref Ui, id: string): int;
 
-	#
-	# Composite listbox.
-	#
-	# Creates:
-	#   id
-	#   id + ".cv"
-	#
-	# The window node stores:
-	#   iarg0 = top
-	#   iarg1 = selected index
-	#   iarg2 = item count
-	#
 	listbox: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, title: string): int;
 	setlistbox: fn(u: ref Ui, id: string, items: array of string, top, sel: int): int;
 
-	#
-	# Composite task dialog.
-	#
-	# Creates a reusable dialog with:
-	#   id + ".spin"
-	#   id + ".phase"
-	#   id + ".src"
-	#   id + ".dst"
-	#   id + ".item"
-	#   id + ".itempct"
-	#   id + ".itembar"
-	#   id + ".total"
-	#   id + ".totalpct"
-	#   id + ".totalbar"
-	#   id + ".meterlbl"
-	#   id + ".meter"
-	#   id + ".hint"
-	#
 	taskdialog: fn(u: ref Ui, parentid, id: string, x, y, w: int, title: string): int;
 	settaskdialog: fn(u: ref Ui, id, phase, src, dst, item: string, itemvalue, totalvalue, meter: int): int;
 	ticktaskdialog: fn(u: ref Ui, id: string): int;

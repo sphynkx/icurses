@@ -16,6 +16,7 @@ initcell: fn(ch, code: string): IcPaint->Cell;
 makecells: fn(n: int, ch, code: string): array of IcPaint->Cell;
 
 drawnode: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawshadow: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawwindow: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawbutton: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawlabel: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
@@ -34,6 +35,8 @@ percentstr: fn(value, total: int): string;
 spinnerch: fn(style, frame: int): string;
 samecell: fn(a, b: IcPaint->Cell): int;
 putslimit: fn(r: ref IcPaint->Renderer, x, y, maxw: int, text, code: string);
+shadecell: fn(r: ref IcPaint->Renderer, x, y: int);
+shaderect: fn(r: ref IcPaint->Renderer, x, y, w, h: int);
 
 wraptext: fn(text: string, width: int): array of string;
 appendline: fn(a: array of string, s: string): array of string;
@@ -49,6 +52,7 @@ CodeButton: string;
 CodeFocus: string;
 CodeStatus: string;
 CodeScroll: string;
+CodeShadow: string;
 
 init()
 {
@@ -95,6 +99,7 @@ init()
 	CodeFocus = theme->sgr(IcTheme->AttrFocus);
 	CodeStatus = theme->sgr(IcTheme->AttrStatus);
 	CodeScroll = theme->sgr(IcTheme->AttrScroll);
+	CodeShadow = theme->sgr(IcTheme->AttrShadow);
 }
 
 sig(ch, code: string): int
@@ -280,6 +285,35 @@ fillrect(r: ref IcPaint->Renderer, x, y, w, h: int, ch, code: string)
 	for(yy = 0; yy < h; yy++){
 		for(xx = 0; xx < w; xx++)
 			putc(r, x + xx, y + yy, ch, code);
+	}
+}
+
+shadecell(r: ref IcPaint->Renderer, x, y: int)
+{
+	i: int;
+	ch: string;
+
+	if(!inrange(r, x, y))
+		return;
+
+	i = idx(r, x, y);
+	ch = r.back[i].ch;
+	if(ch == "")
+		ch = " ";
+
+	r.back[i] = initcell(ch, CodeShadow);
+}
+
+shaderect(r: ref IcPaint->Renderer, x, y, w, h: int)
+{
+	xx, yy: int;
+
+	if(r == nil)
+		return;
+
+	for(yy = 0; yy < h; yy++){
+		for(xx = 0; xx < w; xx++)
+			shadecell(r, x + xx, y + yy);
 	}
 }
 
@@ -739,6 +773,24 @@ drawcanvas(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	}
 }
 
+drawshadow(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, w, h: int;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	w = n.w;
+	h = n.h;
+
+	if(w <= 0 || h <= 0)
+		return;
+
+	shaderect(r, x, y, w, h);
+}
+
 drawwindow(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 {
 	x, y, w, h, tx, style: int;
@@ -987,7 +1039,9 @@ drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	if(!view->isvisibletree(t, n.id))
 		return;
 
-	if(n.kind == "canvas")
+	if(n.kind == "shadow")
+		drawshadow(r, t, n);
+	else if(n.kind == "canvas")
 		drawcanvas(r, t, n);
 	else if(n.kind == "window")
 		drawwindow(r, t, n);

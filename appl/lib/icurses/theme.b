@@ -47,6 +47,16 @@ sgr(attr: int): string
 		if(attr == AttrScroll)
 			return "38;2;255;220;80;48;2;20;45;90";
 
+		#
+		# Shadow is a compositing effect in paint.b:
+		# Cell.ch is preserved, only Cell.code is replaced.
+		#
+		# Use a dark background and muted foreground so text/frames
+		# remain visible but look dimmed.
+		#
+		if(attr == AttrShadow)
+			return "38;2;120;130;150;48;2;6;14;30";
+
 		if(attr == AttrEffectHead)
 			return "38;2;220;255;220;40";
 		if(attr == AttrEffectBright)
@@ -77,6 +87,15 @@ sgr(attr: int): string
 		return "1;30;47";
 	if(attr == AttrScroll)
 		return "1;33;44";
+
+	#
+	# 16-color fallback shadow.
+	#
+	# Important: this is still compositing shadow, not character shadow.
+	# It preserves glyphs and only changes their style.
+	#
+	if(attr == AttrShadow)
+		return "0;37;40";
 
 	if(attr == AttrEffectHead)
 		return "1;37;40";
