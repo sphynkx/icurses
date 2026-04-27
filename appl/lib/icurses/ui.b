@@ -1,13 +1,13 @@
 implement IcUi;
 
-include "icurses/icurses.m";
+include "icurses/ui.m";
 
 sys: Sys;
-ic: Icurses;
 view: IcView;
 paint: IcPaint;
 msg: IcMsg;
 keymap: IcKeymap;
+ic: Icurses;
 
 pressnode: fn(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg;
 

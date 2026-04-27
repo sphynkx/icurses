@@ -1,3 +1,4 @@
+include "icurses/view.m";
 include "icurses/paint.m";
 include "icurses/keymap.m";
 

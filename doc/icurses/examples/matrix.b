@@ -1,7 +1,7 @@
 implement Matrix;
 
 include "draw.m";
-include "icurses/icurses.m";
+include "icurses/ui.m";
 
 Matrix: module
 {
@@ -16,14 +16,14 @@ msg: IcMsg;
 out: ref Sys->FD;
 
 #
-# Fallback terminal size used when /dev/consinfo is unavailable
+# Fallback terminal size used when Icurses->consinfo() is unavailable
 # or reports an unusable geometry.
 #
 DefaultW: con 80;
 DefaultH: con 24;
 
 #
-# Runtime terminal geometry read from /dev/consinfo.
+# Runtime terminal geometry read through Icurses->consinfo().
 # statusy0/statusy1 reserve the last two rows for icurses status/help.
 #
 cw: int;
@@ -77,7 +77,7 @@ lastkey: int;
 panelvisible: int;
 
 #
-# Terminal capability information read from /dev/consinfo.
+# Terminal capability information read through Icurses->consinfo().
 #
 colors: int;
 truecolor: int;
@@ -114,11 +114,8 @@ sphase: array of int;
 build: fn(u: ref IcUi->Ui);
 
 #
-# Parse helpers for /dev/consinfo.
+# Read terminal geometry and capabilities through Icurses->consinfo().
 #
-parseintat: fn(s: string, i: int): (int, int, int);
-paramint: fn(s, key: string, def: int): int;
-paramstr: fn(s, key, def: string): string;
 readconsoleparams: fn();
 
 #
@@ -185,114 +182,13 @@ streamproc: fn(i: int);
 streamdelay: fn(i: int): int;
 
 #
-# Parse a non-negative integer from s starting at index i.
-# Skips whitespace before the number.
-# Returns: parsed value, next index, and ok flag.
-#
-parseintat(s: string, i: int): (int, int, int)
-{
-	v, ok: int;
-
-	v = 0;
-	ok = 0;
-
-	while(i < len s && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r'))
-		i++;
-
-	while(i < len s && s[i] >= '0' && s[i] <= '9'){
-		v = v * 10 + int s[i] - int '0';
-		i++;
-		ok = 1;
-	}
-
-	return (v, i, ok);
-}
-
-#
-# Read integer key=value parameter from a multi-line text block.
-# Parameters:
-#   s   - input text.
-#   key - parameter name without '='.
-#   def - fallback value.
-# Returns: parsed value or def.
-#
-paramint(s, key: string, def: int): int
-{
-	i, j, v, ok: int;
-	prefix: string;
-
-	prefix = key + "=";
-
-	for(i = 0; i < len s; i++){
-		if(i > 0 && s[i - 1] != '\n')
-			continue;
-
-		if(i + len prefix > len s)
-			continue;
-
-		if(s[i:i + len prefix] != prefix)
-			continue;
-
-		j = i + len prefix;
-		(v, j, ok) = parseintat(s, j);
-		if(ok)
-			return v;
-
-		return def;
-	}
-
-	return def;
-}
-
-#
-# Read string key=value parameter from a multi-line text block.
-# Parameters:
-#   s   - input text.
-#   key - parameter name without '='.
-#   def - fallback value.
-# Returns: parsed string or def.
-#
-paramstr(s, key, def: string): string
-{
-	i, j: int;
-	prefix: string;
-
-	prefix = key + "=";
-
-	for(i = 0; i < len s; i++){
-		if(i > 0 && s[i - 1] != '\n')
-			continue;
-
-		if(i + len prefix > len s)
-			continue;
-
-		if(s[i:i + len prefix] != prefix)
-			continue;
-
-		j = i + len prefix;
-		while(j < len s && s[j] != '\n' && s[j] != '\r')
-			j++;
-
-		if(j > i + len prefix)
-			return s[i + len prefix:j];
-
-		return def;
-	}
-
-	return def;
-}
-
-#
-# Read terminal geometry and capabilities from /dev/consinfo.
+# Read terminal geometry and capabilities through Icurses->consinfo().
 # Updates global cw/ch/status rows/colors/truecolor/conssource.
-# Falls back to DefaultW x DefaultH when the device is missing or invalid.
+# Falls back to DefaultW x DefaultH when the backend reports invalid values.
 #
 readconsoleparams()
 {
-	fd: ref Sys->FD;
-	buf: array of byte;
-	n, i, ok: int;
-	s: string;
+	ci: Icurses->ConsInfo;
 
 	cw = DefaultW;
 	ch = DefaultH;
@@ -303,34 +199,19 @@ readconsoleparams()
 	truecolor = 0;
 	conssource = "default";
 
-	fd = sys->open("/dev/consinfo", Sys->OREAD);
-	if(fd == nil)
-		return;
+	ci = ic->consinfo();
 
-	buf = array[1024] of byte;
-	n = sys->read(fd, buf, len buf);
-	if(n <= 0)
-		return;
-
-	s = string buf[0:n];
-
-	i = 0;
-	(cw, i, ok) = parseintat(s, i);
-	if(!ok)
-		cw = paramint(s, "cols", DefaultW);
-
-	(ch, i, ok) = parseintat(s, i);
-	if(!ok)
-		ch = paramint(s, "rows", DefaultH);
+	cw = ci.cols;
+	ch = ci.rows;
 
 	if(cw < 40)
 		cw = DefaultW;
 	if(ch < 15)
 		ch = DefaultH;
 
-	colors = paramint(s, "colors", 16);
-	truecolor = paramint(s, "truecolor", 0);
-	conssource = paramstr(s, "source", "unknown");
+	colors = ci.colors;
+	truecolor = ci.truecolor;
+	conssource = ci.source;
 
 	statusy0 = ch - 2;
 	statusy1 = ch - 1;
@@ -912,7 +793,7 @@ build(u: ref IcUi->Ui)
 	ui->window(u, root, "win.panel", PanelX, PanelY, PanelW, PanelH, "Animation control (press `h` to hide)");
 	ui->setframe(u, "win.panel", IcPaint->FrameDouble);
 	ui->setcontent(u, "win.panel",
-		"Sparse async stream model. Console params are read from /dev/consinfo. c cycles ASCII/Cyrillic/CJK. t toggles truecolor.");
+		"Sparse async stream model. Console params are read through Icurses->consinfo(). c cycles ASCII/Cyrillic/CJK. t toggles truecolor.");
 	ui->setscroll(u, "win.panel", IcView->ScrollClip, 0);
 
 	ui->button(u, "win.panel", "btn.pause", 2, 5, 11, 1, "Pause", "", "app", "app.pause");

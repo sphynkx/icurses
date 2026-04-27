@@ -1,4 +1,4 @@
-include "icurses/ui.m";
+include "sys.m";
 
 Icurses: module
 {
@@ -6,6 +6,10 @@ Icurses: module
 
 	KeyboardPath: con "/dev/ekeyboard";
 	ConsctlPath:  con "/dev/consctl";
+	ConsinfoPath: con "/dev/consinfo";
+
+	DefaultCols: con 80;
+	DefaultRows: con 24;
 
 	Khome:     con 57360;
 	Kend:      con 57361;
@@ -45,12 +49,59 @@ Icurses: module
 		done: int;
 	};
 
+	#
+	# Parsed /dev/consinfo data.
+	#
+	# The first line of /dev/consinfo is expected to be:
+	#   "<cols> <rows>"
+	#
+	# Additional key=value lines are optional. Missing fields keep
+	# conservative fallback values.
+	#
+	ConsInfo: adt
+	{
+		cols:       int;
+		rows:       int;
+
+		buffercols: int;
+		bufferrows: int;
+
+		left:       int;
+		top:        int;
+		right:      int;
+		bottom:     int;
+
+		cursorx:    int;
+		cursory:    int;
+
+		colors:     int;
+		truecolor:  int;
+		utf8:       int;
+		vt:         int;
+
+		ok:         int;
+		source:     string;
+		raw:        string;
+	};
+
 	init: fn();
 
 	openkbd: fn(): int;
 	closekbd: fn();
 	readkey: fn(): int;
 	keyname: fn(k: int): string;
+
+	#
+	# Read and parse /dev/consinfo.
+	# Returns fallback DefaultCols x DefaultRows when unavailable.
+	#
+	consinfo: fn(): ConsInfo;
+
+	#
+	# Convenience wrapper around consinfo().
+	# Returns: (cols, rows).
+	#
+	termsize: fn(): (int, int);
 
 	stepok: fn(done: int): StepCtl;
 	steperr: fn(): StepCtl;

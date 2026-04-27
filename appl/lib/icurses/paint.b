@@ -1,6 +1,7 @@
 implement IcPaint;
 
-include "icurses/icurses.m";
+include "icurses/view.m";
+include "icurses/paint.m";
 
 sys: Sys;
 ic: Icurses;
