@@ -21,6 +21,9 @@ ensurefocus: fn(u: ref IcUi->Ui): ref IcView->Node;
 keyproc: fn(u: ref IcUi->Ui);
 tickproc: fn(u: ref IcUi->Ui);
 
+clamp: fn(v, lo, hi: int): int;
+percenttext: fn(value, total: int): string;
+
 init()
 {
 	sys = load Sys Sys->PATH;
@@ -52,6 +55,30 @@ init()
 	paint->init();
 	msg->init();
 	keymap->init();
+}
+
+clamp(v, lo, hi: int): int
+{
+	if(v < lo)
+		return lo;
+	if(v > hi)
+		return hi;
+	return v;
+}
+
+percenttext(value, total: int): string
+{
+	p: int;
+
+	if(total <= 0)
+		total = 100;
+
+	value = clamp(value, 0, total);
+
+	p = (value * 100) / total;
+	p = clamp(p, 0, 100);
+
+	return sys->sprint("%d%%", p);
 }
 
 new(out: ref Sys->FD, w, h: int): ref IcUi->Ui
@@ -457,6 +484,204 @@ tickspinner(u: ref IcUi->Ui, id: string): int
 	return 0;
 }
 
+listbox(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string): int
+{
+	if(u == nil)
+		return -1;
+
+	if(w < 12)
+		w = 12;
+	if(h < 4)
+		h = 4;
+
+	if(window(u, parentid, id, x, y, w, h, title) < 0)
+		return -1;
+
+	if(canvas(u, id, id + ".cv", 1, 1, w - 2, h - 2) < 0)
+		return -1;
+
+	return 0;
+}
+
+setlistbox(u: ref IcUi->Ui, id: string, items: array of string, top, sel: int): int
+{
+	n: ref IcView->Node;
+	cv, line, prefix: string;
+	rows, cols, r, i, count, thumb: int;
+
+	if(u == nil || u.tree == nil || items == nil)
+		return -1;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	cv = id + ".cv";
+	rows = n.h - 2;
+	cols = n.w - 2;
+
+	if(rows <= 0 || cols <= 0)
+		return -1;
+
+	count = len items;
+
+	if(canvasclear(u, cv, " ", "") < 0)
+		return -1;
+
+	if(count <= 0){
+		canvasputs(u, cv, 0, 0, "(empty)", "");
+		view->setargs(n, "", 0, -1, 0);
+		return 0;
+	}
+
+	sel = clamp(sel, 0, count - 1);
+
+	if(count <= rows)
+		top = 0;
+	else
+		top = clamp(top, 0, count - rows);
+
+	for(r = 0; r < rows; r++){
+		i = top + r;
+		if(i >= count)
+			break;
+
+		if(i == sel)
+			prefix = "> ";
+		else
+			prefix = "  ";
+
+		line = prefix + items[i];
+		canvasputs(u, cv, 0, r, line, "");
+	}
+
+	if(count > rows){
+		canvasfill(u, cv, cols - 1, 0, 1, rows, "|", "");
+
+		thumb = (top * rows) / count;
+		thumb = clamp(thumb, 0, rows - 1);
+
+		canvasputc(u, cv, cols - 1, thumb, "#", "");
+	}
+
+	view->setargs(n, "", top, sel, count);
+	return 0;
+}
+
+taskdialog(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, title: string): int
+{
+	if(u == nil)
+		return -1;
+
+	if(w < 50)
+		w = 50;
+
+	if(window(u, parentid, id, x, y, w, 13, title) < 0)
+		return -1;
+
+	if(spinner(u, id, id + ".spin", 2, 1, IcPaint->SpinnerAscii) < 0)
+		return -1;
+
+	if(label(u, id, id + ".phase", 4, 1, w - 8, "Preparing...") < 0)
+		return -1;
+
+	if(label(u, id, id + ".src", 2, 3, w - 6, "from:") < 0)
+		return -1;
+
+	if(label(u, id, id + ".dst", 2, 4, w - 6, "to:") < 0)
+		return -1;
+
+	if(label(u, id, id + ".item", 2, 6, w - 20, "item:") < 0)
+		return -1;
+
+	if(label(u, id, id + ".itempct", w - 16, 6, 6, "0%") < 0)
+		return -1;
+
+	if(progress(u, id, id + ".itembar", 2, 7, w - 20, 0, 100) < 0)
+		return -1;
+
+	if(progressstyle(u, id + ".itembar", IcPaint->ProgressPercent) < 0)
+		return -1;
+
+	if(label(u, id, id + ".total", 2, 9, w - 20, "total:") < 0)
+		return -1;
+
+	if(label(u, id, id + ".totalpct", w - 16, 9, 6, "0%") < 0)
+		return -1;
+
+	if(progress(u, id, id + ".totalbar", 2, 10, w - 20, 0, 100) < 0)
+		return -1;
+
+	if(progressstyle(u, id + ".totalbar", IcPaint->ProgressTail) < 0)
+		return -1;
+
+	if(label(u, id, id + ".meterlbl", w - 8, 6, 5, "I/O") < 0)
+		return -1;
+
+	if(vbar(u, id, id + ".meter", w - 7, 7, 4, 0, 100) < 0)
+		return -1;
+
+	if(label(u, id, id + ".hint", 2, 11, w - 6, "task dialog") < 0)
+		return -1;
+
+	return 0;
+}
+
+settaskdialog(u: ref IcUi->Ui, id, phase, src, dst, item: string, itemvalue, totalvalue, meter: int): int
+{
+	itemp, totalp: string;
+
+	if(u == nil)
+		return -1;
+
+	itemvalue = clamp(itemvalue, 0, 100);
+	totalvalue = clamp(totalvalue, 0, 100);
+	meter = clamp(meter, 0, 100);
+
+	itemp = percenttext(itemvalue, 100);
+	totalp = percenttext(totalvalue, 100);
+
+	if(settext(u, id + ".phase", phase) < 0)
+		return -1;
+
+	if(settext(u, id + ".src", "from: " + src) < 0)
+		return -1;
+
+	if(settext(u, id + ".dst", "to:   " + dst) < 0)
+		return -1;
+
+	if(settext(u, id + ".item", "item: " + item) < 0)
+		return -1;
+
+	if(settext(u, id + ".itempct", itemp) < 0)
+		return -1;
+
+	if(settext(u, id + ".total", "total: " + totalp) < 0)
+		return -1;
+
+	if(settext(u, id + ".totalpct", totalp) < 0)
+		return -1;
+
+	if(setprogress(u, id + ".itembar", itemvalue, 100) < 0)
+		return -1;
+
+	if(setprogress(u, id + ".totalbar", totalvalue, 100) < 0)
+		return -1;
+
+	if(setbar(u, id + ".meter", meter, 100) < 0)
+		return -1;
+
+	return 0;
+}
+
+ticktaskdialog(u: ref IcUi->Ui, id: string): int
+{
+	if(u == nil)
+		return -1;
+
+	return tickspinner(u, id + ".spin");
+}
+
 bindkey(u: ref IcUi->Ui, key, targetid, command: string): int
 {
 	if(u == nil || u.keymap == nil)
@@ -785,7 +1010,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	u.lastmsg = m;
 
 	if(m.kind != IcMsg->KindCommand){
-		u.status = "msg seq=" + string m.seq + " ignored";
+		u.status = "msg seq=" + sys->sprint("%d", m.seq) + " ignored";
 		return m;
 	}
 
@@ -979,6 +1204,15 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		if(n != nil){
 			view->setargs(n, n.sarg, m.iarg0, n.iarg1, n.iarg2);
 			u.status = "spinner.set dst=" + m.dst;
+			m.handled = 1;
+		}
+		return m;
+	}
+
+	if(m.cmd == "listbox.select"){
+		if(n != nil){
+			view->setargs(n, n.sarg, m.iarg0, m.iarg1, n.iarg2);
+			u.status = "listbox.select dst=" + m.dst;
 			m.handled = 1;
 		}
 		return m;
