@@ -72,9 +72,15 @@ IcUi: module
 	hbar: fn(u: ref Ui, parentid, id: string, x, y, w, value, total: int): int;
 	vbar: fn(u: ref Ui, parentid, id: string, x, y, h, value, total: int): int;
 	setbar: fn(u: ref Ui, id: string, value, total: int): int;
+
 	progress: fn(u: ref Ui, parentid, id: string, x, y, w, value, total: int): int;
 	setprogress: fn(u: ref Ui, id: string, value, total: int): int;
-	
+	progressstyle: fn(u: ref Ui, id: string, style: int): int;
+
+	spinner: fn(u: ref Ui, parentid, id: string, x, y, style: int): int;
+	setspinner: fn(u: ref Ui, id: string, frame: int): int;
+	tickspinner: fn(u: ref Ui, id: string): int;
+
 	bindkey: fn(u: ref Ui, key, targetid, command: string): int;
 	bindkeyargs: fn(u: ref Ui, key, targetid, command, sarg: string, iarg0, iarg1, iarg2: int): int;
 

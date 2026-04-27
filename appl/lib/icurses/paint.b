@@ -22,12 +22,16 @@ drawlabel: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node
 drawhbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawvbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawprogress: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawspinner: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcontent: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcanvas: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 
 hline: fn(r: ref IcPaint->Renderer, x, y, w: int, ch, code: string);
 vline: fn(r: ref IcPaint->Renderer, x, y, h: int, ch, code: string);
 barfill: fn(size, value, total: int): int;
+percent: fn(value, total: int): int;
+percentstr: fn(value, total: int): string;
+spinnerch: fn(style, frame: int): string;
 samecell: fn(a, b: IcPaint->Cell): int;
 putslimit: fn(r: ref IcPaint->Renderer, x, y, maxw: int, text, code: string);
 
@@ -319,6 +323,71 @@ barfill(size, value, total: int): int
 		n = size;
 
 	return n;
+}
+
+percent(value, total: int): int
+{
+	p: int;
+
+	if(total <= 0)
+		return 0;
+
+	if(value < 0)
+		value = 0;
+	if(value > total)
+		value = total;
+
+	p = (value * 100) / total;
+
+	if(p < 0)
+		p = 0;
+	if(p > 100)
+		p = 100;
+
+	return p;
+}
+
+percentstr(value, total: int): string
+{
+	return sys->sprint("%d%%", percent(value, total));
+}
+
+spinnerch(style, frame: int): string
+{
+	if(frame < 0)
+		frame = -frame;
+
+	frame = frame % 4;
+
+	if(style == IcPaint->SpinnerDots){
+		if(frame == 0)
+			return ".";
+		if(frame == 1)
+			return "o";
+		if(frame == 2)
+			return "O";
+		return "o";
+	}
+
+	if(style == IcPaint->SpinnerLine){
+		if(glyph != nil && glyph->profile() == IcGlyph->ProfileUnicode){
+			if(frame == 0)
+				return "◐";
+			if(frame == 1)
+				return "◓";
+			if(frame == 2)
+				return "◑";
+			return "◒";
+		}
+	}
+
+	if(frame == 0)
+		return "-";
+	if(frame == 1)
+		return "/";
+	if(frame == 2)
+		return "|";
+	return "+";
 }
 
 box(r: ref IcPaint->Renderer, x, y, w, h, style: int, code: string)
@@ -817,7 +886,8 @@ drawvbar(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 
 drawprogress(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 {
-	x, y, w, value, total, inner: int;
+	x, y, w, value, total, style, barw, inner, fill, i, tailw, pstart: int;
+	p, ch: string;
 
 	if(r == nil || t == nil || n == nil)
 		return;
@@ -831,15 +901,79 @@ drawprogress(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 
 	value = n.iarg0;
 	total = n.iarg1;
+	style = n.iarg2;
+
 	if(total <= 0)
 		total = 100;
 
-	inner = w - 2;
+	barw = w;
+	p = "";
+	tailw = 0;
+
+	if(style == IcPaint->ProgressTail){
+		p = " " + percentstr(value, total);
+		tailw = len p;
+
+		if(w - tailw >= 3)
+			barw = w - tailw;
+		else{
+			barw = w;
+			style = IcPaint->ProgressPercent;
+			p = percentstr(value, total);
+			tailw = 0;
+		}
+	}
+
+	inner = barw - 2;
+	if(inner <= 0)
+		return;
 
 	putc(r, x, y, "[", CodeFrame);
-	putc(r, x + w - 1, y, "]", CodeFrame);
+	putc(r, x + barw - 1, y, "]", CodeFrame);
 
-	hbar(r, x + 1, y, inner, value, total, CodeScroll);
+	if(style == IcPaint->ProgressSolid){
+		hbar(r, x + 1, y, inner, value, total, CodeScroll);
+	}else{
+		fill = barfill(inner, value, total);
+
+		for(i = 0; i < inner; i++){
+			if(i < fill)
+				ch = "#";
+			else
+				ch = ".";
+			putc(r, x + 1 + i, y, ch, CodeScroll);
+		}
+
+		if(style == IcPaint->ProgressPercent){
+			p = percentstr(value, total);
+			pstart = x + 1 + (inner - len p) / 2;
+			if(pstart < x + 1)
+				pstart = x + 1;
+			putslimit(r, pstart, y, inner, p, CodeTitle);
+		}
+	}
+
+	if(style == IcPaint->ProgressTail && tailw > 0)
+		putslimit(r, x + barw, y, tailw, p, CodeTitle);
+}
+
+drawspinner(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, frame, style: int;
+	ch: string;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+
+	frame = n.iarg0;
+	style = n.iarg1;
+
+	ch = spinnerch(style, frame);
+
+	putc(r, x, y, ch, CodeTitle);
 }
 
 drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
@@ -867,6 +1001,8 @@ drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 		drawvbar(r, t, n);
 	else if(n.kind == "progress")
 		drawprogress(r, t, n);
+	else if(n.kind == "spinner")
+		drawspinner(r, t, n);
 
 	for(i = 0; i < len n.children; i++){
 		c = view->find(t, n.children[i]);

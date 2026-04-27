@@ -104,20 +104,66 @@ start(u: ref IcUi->Ui): int
 	if(u == nil)
 		return -1;
 
-	if(openinput() < 0){
-		u.status = "cannot open keyboard";
-		u.running = 0;
-		return -1;
-	}
+	if(u.running)
+		return 0;
 
 	u.running = 1;
 
 	spawn keyproc(u);
 	spawn tickproc(u);
 
-	draw(u);
-
 	return 0;
+}
+
+stop(u: ref IcUi->Ui)
+{
+	if(u == nil)
+		return;
+
+	u.running = 0;
+}
+
+newstep(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step
+{
+	s: IcUi->Step;
+
+	s.kind = kind;
+	s.done = done;
+	s.key = key;
+	s.tick = tick;
+	s.msg = m;
+	s.status = status;
+
+	return s;
+}
+
+step(u: ref IcUi->Ui): IcUi->Step
+{
+	k, t: int;
+	m: IcMsg->Msg;
+
+	if(u == nil)
+		return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), "nil ui");
+
+	if(!u.running)
+		return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), u.status);
+
+	alt {
+	k = <-u.keyc =>
+		if(k < 0 || isquit(k)){
+			u.running = 0;
+			return newstep(IcUi->StepDone, 1, k, 0, msg->none(), "done");
+		}
+
+		m = handlekey(u, k);
+		return newstep(IcUi->StepKey, 0, k, 0, m, u.status);
+
+	t = <-u.tickc =>
+		u.ticks = t;
+		return newstep(IcUi->StepTick, 0, -1, t, msg->none(), u.status);
+	}
+
+	return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), u.status);
 }
 
 keyproc(u: ref IcUi->Ui)
@@ -160,66 +206,6 @@ tickproc(u: ref IcUi->Ui)
 	}
 }
 
-newstep(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step
-{
-	s: IcUi->Step;
-
-	s.kind = kind;
-	s.done = done;
-	s.key = key;
-	s.tick = tick;
-	s.msg = m;
-	s.status = status;
-
-	return s;
-}
-
-step(u: ref IcUi->Ui): IcUi->Step
-{
-	m: IcMsg->Msg;
-
-	if(u == nil)
-		return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), "");
-
-	if(!u.running)
-		return newstep(IcUi->StepDone, 1, -1, u.ticks, msg->none(), u.status);
-
-	alt {
-	k := <-u.keyc =>
-		if(k < 0){
-			u.running = 0;
-			return newstep(IcUi->StepDone, 1, k, u.ticks, msg->none(), u.status);
-		}
-
-		if(isquit(k)){
-			u.running = 0;
-			return newstep(IcUi->StepDone, 1, k, u.ticks, msg->none(), u.status);
-		}
-
-		m = handlekey(u, k);
-		draw(u);
-
-		if(!u.running)
-			return newstep(IcUi->StepDone, 1, k, u.ticks, m, u.status);
-
-		return newstep(IcUi->StepKey, 0, k, u.ticks, m, u.status);
-
-	t := <-u.tickc =>
-		u.ticks = t;
-		return newstep(IcUi->StepTick, 0, -1, t, msg->none(), u.status);
-	}
-}
-
-stop(u: ref IcUi->Ui)
-{
-	if(u == nil)
-		return;
-
-	u.running = 0;
-	closeinput();
-	close(u);
-}
-
 openinput(): int
 {
 	return ic->openkbd();
@@ -237,7 +223,13 @@ readkey(): int
 
 isquit(k: int): int
 {
-	return ic->iscancel(k);
+	if(k == 'q' || k == 'Q')
+		return 1;
+
+	if(ic->iscancel(k))
+		return 1;
+
+	return 0;
 }
 
 rootid(u: ref IcUi->Ui): string
@@ -368,6 +360,7 @@ vbar(u: ref IcUi->Ui, parentid, id: string, x, y, h, value, total: int): int
 setbar(u: ref IcUi->Ui, id: string, value, total: int): int
 {
 	n: ref IcView->Node;
+	style: int;
 
 	if(u == nil || u.tree == nil)
 		return -1;
@@ -384,7 +377,9 @@ setbar(u: ref IcUi->Ui, id: string, value, total: int): int
 	if(value > total)
 		value = total;
 
-	view->setargs(n, "", value, total, 0);
+	style = n.iarg2;
+
+	view->setargs(n, "", value, total, style);
 	return 0;
 }
 
@@ -402,6 +397,64 @@ progress(u: ref IcUi->Ui, parentid, id: string, x, y, w, value, total: int): int
 setprogress(u: ref IcUi->Ui, id: string, value, total: int): int
 {
 	return setbar(u, id, value, total);
+}
+
+progressstyle(u: ref IcUi->Ui, id: string, style: int): int
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	view->setargs(n, n.sarg, n.iarg0, n.iarg1, style);
+	return 0;
+}
+
+spinner(u: ref IcUi->Ui, parentid, id: string, x, y, style: int): int
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	n = view->newnode(id, "spinner", "", x, y, 1, 1);
+	view->setargs(n, "", 0, style, 0);
+
+	return view->addchildnode(u.tree, parentid, n);
+}
+
+setspinner(u: ref IcUi->Ui, id: string, frame: int): int
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	view->setargs(n, n.sarg, frame, n.iarg1, n.iarg2);
+	return 0;
+}
+
+tickspinner(u: ref IcUi->Ui, id: string): int
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	view->setargs(n, n.sarg, n.iarg0 + 1, n.iarg1, n.iarg2);
+	return 0;
 }
 
 bindkey(u: ref IcUi->Ui, key, targetid, command: string): int
@@ -568,10 +621,10 @@ actionok(u: ref IcUi->Ui, n: ref IcView->Node): int
 	if(u == nil || u.tree == nil || n == nil)
 		return 0;
 
-	if(!view->isvisibletree(u.tree, n.id))
+	if(!view->isenabledtree(u.tree, n.id))
 		return 0;
 
-	if(!view->isenabledtree(u.tree, n.id))
+	if(!view->isvisibletree(u.tree, n.id))
 		return 0;
 
 	return 1;
@@ -580,6 +633,7 @@ actionok(u: ref IcUi->Ui, n: ref IcView->Node): int
 ensurefocus(u: ref IcUi->Ui): ref IcView->Node
 {
 	n: ref IcView->Node;
+	id: string;
 
 	if(u == nil || u.tree == nil)
 		return nil;
@@ -588,11 +642,11 @@ ensurefocus(u: ref IcUi->Ui): ref IcView->Node
 	if(focusok(u, n))
 		return n;
 
-	view->nextfocus(u.tree);
-	n = view->focusnode(u.tree);
-
-	if(focusok(u, n))
-		return n;
+	id = view->nextfocus(u.tree);
+	if(id != ""){
+		view->setfocus(u.tree, id);
+		return view->focusnode(u.tree);
+	}
 
 	view->clearfocus(u.tree);
 	return nil;
@@ -600,26 +654,21 @@ ensurefocus(u: ref IcUi->Ui): ref IcView->Node
 
 hotkeymatch(k: int, hotkey: string): int
 {
-	c, kk: int;
-
 	if(hotkey == "")
 		return 0;
 
-	c = int hotkey[0];
-	kk = k;
+	if(len hotkey != 1)
+		return 0;
 
-	if(c >= 'A' && c <= 'Z')
-		c = c + ('a' - 'A');
+	if(k == int hotkey[0])
+		return 1;
 
-	if(kk >= 'A' && kk <= 'Z')
-		kk = kk + ('a' - 'A');
-
-	return c == kk;
+	return 0;
 }
 
 findhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
 {
-	n, r: ref IcView->Node;
+	n, c, r: ref IcView->Node;
 	i: int;
 
 	if(u == nil || u.tree == nil || id == "")
@@ -629,14 +678,17 @@ findhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
 	if(n == nil)
 		return nil;
 
-	for(i = len n.children - 1; i >= 0; i--){
-		r = findhotkeynode(u, n.children[i], k);
-		if(r != nil)
-			return r;
-	}
-
 	if(hotkeymatch(k, n.hotkey) && actionok(u, n))
 		return n;
+
+	for(i = 0; i < len n.children; i++){
+		c = view->find(u.tree, n.children[i]);
+		if(c != nil){
+			r = findhotkeynode(u, c.id, k);
+			if(r != nil)
+				return r;
+		}
+	}
 
 	return nil;
 }
@@ -657,14 +709,12 @@ pressnode(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg
 	if(u == nil || n == nil)
 		return msg->none();
 
-	if(!actionok(u, n))
-		return msg->none();
-
 	dst = n.targetid;
-	if(dst == "")
-		dst = n.parentid;
-
 	cmd = n.command;
+
+	if(dst == "")
+		dst = n.id;
+
 	if(cmd == "")
 		cmd = "button.click";
 
@@ -680,39 +730,46 @@ pressnode(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg
 handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
-	fid: string;
 	m: IcMsg->Msg;
+	nav: int;
+	id: string;
 
 	if(u == nil || u.tree == nil)
 		return msg->none();
 
-	if(k == 9 || k == Icurses->Kright || k == Icurses->Kdown){
-		fid = view->nextfocus(u.tree);
-		u.status = "focus: " + fid;
-		return msg->none();
-	}
-
-	if(k == Icurses->Kbacktab || k == Icurses->Kleft || k == Icurses->Kup){
-		fid = view->prevfocus(u.tree);
-		u.status = "focus: " + fid;
-		return msg->none();
-	}
-
-	if(k == 10 || k == 13){
-		n = ensurefocus(u);
-		return pressnode(u, n);
-	}
-
-	n = findhotkey(u, k);
-	if(n != nil){
-		if(n.focusable)
-			view->setfocus(u.tree, n.id);
-		return pressnode(u, n);
-	}
-
 	m = keymap->find(u.keymap, k);
 	if(!msg->isnone(m))
 		return dispatch(u, m);
+
+	n = findhotkey(u, k);
+	if(n != nil)
+		return pressnode(u, n);
+
+	if(ic->isconfirm(k)){
+		n = view->focusnode(u.tree);
+		if(n != nil)
+			return pressnode(u, n);
+	}
+
+	nav = ic->navkind(k);
+
+	if(nav == Icurses->NavNext || nav == Icurses->NavRight || nav == Icurses->NavDown){
+		id = view->nextfocus(u.tree);
+		if(id != ""){
+			view->setfocus(u.tree, id);
+			u.status = "focus " + id;
+			return msg->newmsg("ui", id, IcMsg->KindFocus, "focus.set");
+		}
+	}
+
+	if(nav == Icurses->NavPrev || nav == Icurses->NavLeft || nav == Icurses->NavUp){
+		id = view->prevfocus(u.tree);
+		if(id != ""){
+			view->setfocus(u.tree, id);
+			u.status = "focus " + id;
+			return msg->newmsg("ui", id, IcMsg->KindFocus, "focus.set");
+		}
+	}
 
 	return msg->none();
 }
@@ -795,72 +852,8 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 
 	if(m.cmd == "node.move"){
 		if(n != nil){
-			view->movetreeby(u.tree, n.id, m.iarg0, m.iarg1);
+			view->moveby(n, m.iarg0, m.iarg1);
 			u.status = "node.move dst=" + m.dst;
-			m.handled = 1;
-		}
-		return m;
-	}
-
-	if(m.cmd == "window.activate" || m.cmd == "window.front"){
-		if(n != nil){
-			view->activatewindow(u.tree, n.id);
-			u.status = m.cmd + " dst=" + m.dst;
-			m.handled = 1;
-		}
-		return m;
-	}
-
-	if(m.cmd == "window.back"){
-		if(n != nil){
-			view->sendtoback(u.tree, n.id);
-			u.status = "window.back dst=" + m.dst;
-			m.handled = 1;
-		}
-		return m;
-	}
-
-	if(m.cmd == "window.toggle"){
-		if(n != nil){
-			if(view->isvisible(n))
-				view->hide(n);
-			else
-				view->show(n);
-
-			ensurefocus(u);
-
-			u.status = "window.toggle src=" + m.src + " dst=" + m.dst;
-			m.handled = 1;
-		}
-		return m;
-	}
-
-	if(m.cmd == "window.move"){
-		if(n != nil){
-			view->movetreeby(u.tree, n.id, m.iarg0, m.iarg1);
-			u.status = "window.move src=" + m.src + " dst=" + m.dst;
-			m.handled = 1;
-		}
-		return m;
-	}
-
-	if(m.cmd == "focus.next"){
-		view->nextfocus(u.tree);
-		u.status = "focus.next";
-		m.handled = 1;
-		return m;
-	}
-
-	if(m.cmd == "focus.prev"){
-		view->prevfocus(u.tree);
-		u.status = "focus.prev";
-		m.handled = 1;
-		return m;
-	}
-
-	if(m.cmd == "focus.set"){
-		if(n != nil && view->setfocus(u.tree, n.id) == 0){
-			u.status = "focus.set dst=" + m.dst;
 			m.handled = 1;
 		}
 		return m;
@@ -940,7 +933,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 			if(m.iarg0 > m.iarg1)
 				m.iarg0 = m.iarg1;
 
-			view->setargs(n, "", m.iarg0, m.iarg1, 0);
+			view->setargs(n, "", m.iarg0, m.iarg1, n.iarg2);
 			u.status = "bar.set dst=" + m.dst;
 			m.handled = 1;
 		}
@@ -957,8 +950,35 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 			if(m.iarg0 > m.iarg1)
 				m.iarg0 = m.iarg1;
 
-			view->setargs(n, "", m.iarg0, m.iarg1, 0);
+			view->setargs(n, "", m.iarg0, m.iarg1, n.iarg2);
 			u.status = "progress.set dst=" + m.dst;
+			m.handled = 1;
+		}
+		return m;
+	}
+
+	if(m.cmd == "progress.style"){
+		if(n != nil){
+			view->setargs(n, n.sarg, n.iarg0, n.iarg1, m.iarg0);
+			u.status = "progress.style dst=" + m.dst;
+			m.handled = 1;
+		}
+		return m;
+	}
+
+	if(m.cmd == "spinner.tick"){
+		if(n != nil){
+			view->setargs(n, n.sarg, n.iarg0 + 1, n.iarg1, n.iarg2);
+			u.status = "spinner.tick dst=" + m.dst;
+			m.handled = 1;
+		}
+		return m;
+	}
+
+	if(m.cmd == "spinner.set"){
+		if(n != nil){
+			view->setargs(n, n.sarg, m.iarg0, n.iarg1, n.iarg2);
+			u.status = "spinner.set dst=" + m.dst;
 			m.handled = 1;
 		}
 		return m;
@@ -984,6 +1004,6 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		return m;
 	}
 
-	u.status = "unhandled msg src=" + m.src + " dst=" + m.dst + " cmd=" + m.cmd;
+	u.status = "unhandled cmd=" + m.cmd + " dst=" + m.dst;
 	return m;
 }

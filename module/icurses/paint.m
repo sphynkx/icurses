@@ -10,6 +10,15 @@ IcPaint: module
 	FrameSingle: con 1;
 	FrameDouble: con 2;
 
+	ProgressSolid:   con 0;
+	ProgressText:    con 1;
+	ProgressPercent: con 2;
+	ProgressTail:    con 3;
+
+	SpinnerAscii: con 0;
+	SpinnerLine:  con 1;
+	SpinnerDots:  con 2;
+
 	Cell: adt
 	{
 		ch:   string;
@@ -43,9 +52,6 @@ IcPaint: module
 	puts: fn(r: ref Renderer, x, y: int, text, code: string);
 	fillrect: fn(r: ref Renderer, x, y, w, h: int, ch, code: string);
 
-	#
-	# Low-level drawing primitives.
-	#
 	box: fn(r: ref Renderer, x, y, w, h, style: int, code: string);
 	hbar: fn(r: ref Renderer, x, y, w, value, total: int, code: string);
 	vbar: fn(r: ref Renderer, x, y, h, value, total: int, code: string);
