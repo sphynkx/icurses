@@ -388,6 +388,22 @@ setbar(u: ref IcUi->Ui, id: string, value, total: int): int
 	return 0;
 }
 
+progress(u: ref IcUi->Ui, parentid, id: string, x, y, w, value, total: int): int
+{
+	if(w < 3)
+		w = 3;
+
+	if(node(u, parentid, id, "progress", x, y, w, 1) < 0)
+		return -1;
+
+	return setprogress(u, id, value, total);
+}
+
+setprogress(u: ref IcUi->Ui, id: string, value, total: int): int
+{
+	return setbar(u, id, value, total);
+}
+
 bindkey(u: ref IcUi->Ui, key, targetid, command: string): int
 {
 	if(u == nil || u.keymap == nil)
@@ -926,6 +942,23 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 
 			view->setargs(n, "", m.iarg0, m.iarg1, 0);
 			u.status = "bar.set dst=" + m.dst;
+			m.handled = 1;
+		}
+		return m;
+	}
+
+	if(m.cmd == "progress.set"){
+		if(n != nil){
+			if(m.iarg1 <= 0)
+				m.iarg1 = 100;
+
+			if(m.iarg0 < 0)
+				m.iarg0 = 0;
+			if(m.iarg0 > m.iarg1)
+				m.iarg0 = m.iarg1;
+
+			view->setargs(n, "", m.iarg0, m.iarg1, 0);
+			u.status = "progress.set dst=" + m.dst;
 			m.handled = 1;
 		}
 		return m;

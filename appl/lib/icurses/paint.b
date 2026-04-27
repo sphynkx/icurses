@@ -21,6 +21,7 @@ drawbutton: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Nod
 drawlabel: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawhbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawvbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawprogress: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcontent: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcanvas: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 
@@ -814,6 +815,33 @@ drawvbar(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	vbar(r, x, y, h, value, total, CodeScroll);
 }
 
+drawprogress(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, w, value, total, inner: int;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	w = n.w;
+
+	if(w < 3)
+		return;
+
+	value = n.iarg0;
+	total = n.iarg1;
+	if(total <= 0)
+		total = 100;
+
+	inner = w - 2;
+
+	putc(r, x, y, "[", CodeFrame);
+	putc(r, x + w - 1, y, "]", CodeFrame);
+
+	hbar(r, x + 1, y, inner, value, total, CodeScroll);
+}
+
 drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 {
 	i: int;
@@ -837,6 +865,8 @@ drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 		drawhbar(r, t, n);
 	else if(n.kind == "vbar")
 		drawvbar(r, t, n);
+	else if(n.kind == "progress")
+		drawprogress(r, t, n);
 
 	for(i = 0; i < len n.children; i++){
 		c = view->find(t, n.children[i]);
