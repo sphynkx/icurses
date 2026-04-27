@@ -69,3 +69,32 @@ frame(style: int): Frame
 
 	return f;
 }
+
+scrollbar(): Scrollbar
+{
+	s: Scrollbar;
+
+	if(_profile == ProfileUnicode){
+		s.v = "│";
+		s.h = "─";
+		s.thumb = "█";
+		return s;
+	}
+
+	s.v = "|";
+	s.h = "-";
+	s.thumb = "#";
+
+	return s;
+}
+
+block(level: int): string
+{
+	if(level <= 0)
+		return " ";
+
+	if(_profile == ProfileUnicode)
+		return "█";
+
+	return "#";
+}

@@ -429,6 +429,7 @@ drawcontent(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	x, y, w, h, cw, ch, i, start, total, barx, thumb: int;
 	lines: array of string;
 	content: string;
+	sb: IcGlyph->Scrollbar;
 
 	if(r == nil || t == nil || n == nil)
 		return;
@@ -473,7 +474,17 @@ drawcontent(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 
 	if(n.scroll == IcView->ScrollBar && total > ch){
 		barx = x + cw;
-		vline(r, barx, y, ch, "│", CodeScroll);
+
+		if(glyph != nil)
+			sb = glyph->scrollbar();
+		else{
+			sb.v = "|";
+			sb.h = "-";
+			sb.thumb = "#";
+		}
+
+		vline(r, barx, y, ch, sb.v, CodeScroll);
+
 		thumb = y;
 		if(total > 0)
 			thumb = y + (start * ch) / total;
@@ -481,7 +492,8 @@ drawcontent(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 			thumb = y;
 		if(thumb >= y + ch)
 			thumb = y + ch - 1;
-		putc(r, barx, thumb, "█", CodeScroll);
+
+		putc(r, barx, thumb, sb.thumb, CodeScroll);
 	}
 }
 

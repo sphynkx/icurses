@@ -37,9 +37,27 @@ IcGlyph: module
 		se: string;
 	};
 
+	#
+	# Scrollbar glyphs.
+	# v/h are track glyphs; thumb is the movable handle.
+	#
+	Scrollbar: adt
+	{
+		v:     string;
+		h:     string;
+		thumb: string;
+	};
+
 	init: fn(ci: Icurses->ConsInfo);
 
 	profile: fn(): int;
 
 	frame: fn(style: int): Frame;
+	scrollbar: fn(): Scrollbar;
+
+	#
+	# Return a generic filled block glyph for simple bars/effects.
+	# level <= 0 returns a blank cell.
+	#
+	block: fn(level: int): string;
 };
