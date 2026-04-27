@@ -43,6 +43,13 @@ IcPaint: module
 	puts: fn(r: ref Renderer, x, y: int, text, code: string);
 	fillrect: fn(r: ref Renderer, x, y, w, h: int, ch, code: string);
 
+	#
+	# Low-level drawing primitives.
+	#
+	box: fn(r: ref Renderer, x, y, w, h, style: int, code: string);
+	hbar: fn(r: ref Renderer, x, y, w, value, total: int, code: string);
+	vbar: fn(r: ref Renderer, x, y, h, value, total: int, code: string);
+
 	canvasnew: fn(id: string, w, h: int): int;
 	canvasclear: fn(id, ch, code: string): int;
 	canvasfill: fn(id: string, x, y, w, h: int, ch, code: string): int;

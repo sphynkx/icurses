@@ -23,6 +23,7 @@ drawcanvas: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Nod
 
 hline: fn(r: ref IcPaint->Renderer, x, y, w: int, ch, code: string);
 vline: fn(r: ref IcPaint->Renderer, x, y, h: int, ch, code: string);
+barfill: fn(size, value, total: int): int;
 samecell: fn(a, b: IcPaint->Cell): int;
 putslimit: fn(r: ref IcPaint->Renderer, x, y, maxw: int, text, code: string);
 
@@ -288,6 +289,140 @@ vline(r: ref IcPaint->Renderer, x, y, h: int, ch, code: string)
 
 	for(i = 0; i < h; i++)
 		putc(r, x, y + i, ch, code);
+}
+
+barfill(size, value, total: int): int
+{
+	n: int;
+
+	if(size <= 0)
+		return 0;
+
+	if(total <= 0)
+		return 0;
+
+	if(value < 0)
+		value = 0;
+	if(value > total)
+		value = total;
+
+	n = (value * size) / total;
+
+	if(value > 0 && n <= 0)
+		n = 1;
+
+	if(n > size)
+		n = size;
+
+	return n;
+}
+
+box(r: ref IcPaint->Renderer, x, y, w, h, style: int, code: string)
+{
+	f: IcGlyph->Frame;
+
+	if(r == nil)
+		return;
+
+	if(w <= 0 || h <= 0)
+		return;
+
+	if(code == "")
+		code = CodeFrame;
+
+	if(glyph != nil)
+		f = glyph->frame(style);
+	else{
+		f.h = "-";
+		f.v = "|";
+		f.nw = "+";
+		f.ne = "+";
+		f.sw = "+";
+		f.se = "+";
+	}
+
+	if(w == 1 && h == 1){
+		putc(r, x, y, f.nw, code);
+		return;
+	}
+
+	if(h == 1){
+		hline(r, x, y, w, f.h, code);
+		return;
+	}
+
+	if(w == 1){
+		vline(r, x, y, h, f.v, code);
+		return;
+	}
+
+	hline(r, x, y, w, f.h, code);
+	hline(r, x, y + h - 1, w, f.h, code);
+	vline(r, x, y, h, f.v, code);
+	vline(r, x + w - 1, y, h, f.v, code);
+
+	putc(r, x, y, f.nw, code);
+	putc(r, x + w - 1, y, f.ne, code);
+	putc(r, x, y + h - 1, f.sw, code);
+	putc(r, x + w - 1, y + h - 1, f.se, code);
+}
+
+hbar(r: ref IcPaint->Renderer, x, y, w, value, total: int, code: string)
+{
+	i, n: int;
+	ch: string;
+
+	if(r == nil)
+		return;
+
+	if(w <= 0)
+		return;
+
+	if(code == "")
+		code = CodeScroll;
+
+	if(glyph != nil)
+		ch = glyph->block(1);
+	else
+		ch = "#";
+
+	n = barfill(w, value, total);
+
+	for(i = 0; i < w; i++){
+		if(i < n)
+			putc(r, x + i, y, ch, code);
+		else
+			putc(r, x + i, y, " ", CodeNormal);
+	}
+}
+
+vbar(r: ref IcPaint->Renderer, x, y, h, value, total: int, code: string)
+{
+	i, n: int;
+	ch: string;
+
+	if(r == nil)
+		return;
+
+	if(h <= 0)
+		return;
+
+	if(code == "")
+		code = CodeScroll;
+
+	if(glyph != nil)
+		ch = glyph->block(1);
+	else
+		ch = "#";
+
+	n = barfill(h, value, total);
+
+	for(i = 0; i < h; i++){
+		if(i >= h - n)
+			putc(r, x, y + i, ch, code);
+		else
+			putc(r, x, y + i, " ", CodeNormal);
+	}
 }
 
 framechars(style: int): array of string
