@@ -68,6 +68,15 @@ IcUi: module
 	button: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, label, hotkey, targetid, command: string): int;
 	canvas: fn(u: ref Ui, parentid, id: string, x, y, w, h: int): int;
 
+	#
+	# Value widgets.
+	# hbar uses width w and height 1.
+	# vbar uses width 1 and height h.
+	#
+	hbar: fn(u: ref Ui, parentid, id: string, x, y, w, value, total: int): int;
+	vbar: fn(u: ref Ui, parentid, id: string, x, y, h, value, total: int): int;
+	setbar: fn(u: ref Ui, id: string, value, total: int): int;
+
 	bindkey: fn(u: ref Ui, key, targetid, command: string): int;
 	bindkeyargs: fn(u: ref Ui, key, targetid, command, sarg: string, iarg0, iarg1, iarg2: int): int;
 

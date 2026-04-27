@@ -331,6 +331,45 @@ canvas(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int): int
 	return paint->canvasnew(id, w, h);
 }
 
+hbar(u: ref IcUi->Ui, parentid, id: string, x, y, w, value, total: int): int
+{
+	if(node(u, parentid, id, "hbar", x, y, w, 1) < 0)
+		return -1;
+
+	return setbar(u, id, value, total);
+}
+
+vbar(u: ref IcUi->Ui, parentid, id: string, x, y, h, value, total: int): int
+{
+	if(node(u, parentid, id, "vbar", x, y, 1, h) < 0)
+		return -1;
+
+	return setbar(u, id, value, total);
+}
+
+setbar(u: ref IcUi->Ui, id: string, value, total: int): int
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	if(total <= 0)
+		total = 100;
+
+	if(value < 0)
+		value = 0;
+	if(value > total)
+		value = total;
+
+	view->setargs(n, "", value, total, 0);
+	return 0;
+}
+
 bindkey(u: ref IcUi->Ui, key, targetid, command: string): int
 {
 	if(u == nil || u.keymap == nil)
@@ -828,6 +867,23 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		if(n != nil){
 			view->setscrollpos(n, m.iarg0);
 			u.status = "scroll.set dst=" + m.dst;
+			m.handled = 1;
+		}
+		return m;
+	}
+
+	if(m.cmd == "bar.set"){
+		if(n != nil){
+			if(m.iarg1 <= 0)
+				m.iarg1 = 100;
+
+			if(m.iarg0 < 0)
+				m.iarg0 = 0;
+			if(m.iarg0 > m.iarg1)
+				m.iarg0 = m.iarg1;
+
+			view->setargs(n, "", m.iarg0, m.iarg1, 0);
+			u.status = "bar.set dst=" + m.dst;
 			m.handled = 1;
 		}
 		return m;

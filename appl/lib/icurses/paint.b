@@ -18,6 +18,8 @@ makecells: fn(n: int, ch, code: string): array of IcPaint->Cell;
 drawnode: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawwindow: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawbutton: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawhbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawvbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcontent: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcanvas: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 
@@ -744,6 +746,50 @@ drawbutton(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	putslimit(r, x, y, w, s, code);
 }
 
+drawhbar(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, w, value, total: int;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	w = n.w;
+
+	if(w <= 0)
+		return;
+
+	value = n.iarg0;
+	total = n.iarg1;
+	if(total <= 0)
+		total = 100;
+
+	hbar(r, x, y, w, value, total, CodeScroll);
+}
+
+drawvbar(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, h, value, total: int;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	h = n.h;
+
+	if(h <= 0)
+		return;
+
+	value = n.iarg0;
+	total = n.iarg1;
+	if(total <= 0)
+		total = 100;
+
+	vbar(r, x, y, h, value, total, CodeScroll);
+}
+
 drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 {
 	i: int;
@@ -761,6 +807,10 @@ drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 		drawwindow(r, t, n);
 	else if(n.kind == "button")
 		drawbutton(r, t, n);
+	else if(n.kind == "hbar")
+		drawhbar(r, t, n);
+	else if(n.kind == "vbar")
+		drawvbar(r, t, n);
 
 	for(i = 0; i < len n.children; i++){
 		c = view->find(t, n.children[i]);
