@@ -1,5 +1,5 @@
 include "icurses/view.m";
-include "icurses/theme.m";
+include "icurses/glyph.m";
 include "icurses/canvas.m";
 
 IcPaint: module

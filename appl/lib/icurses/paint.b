@@ -7,6 +7,7 @@ ic: Icurses;
 view: IcView;
 canvas: IcCanvas;
 theme: IcTheme;
+glyph: IcGlyph;
 
 idx: fn(r: ref IcPaint->Renderer, x, y: int): int;
 inrange: fn(r: ref IcPaint->Renderer, x, y: int): int;
@@ -64,12 +65,18 @@ init()
 	if(theme == nil)
 		raise "fail:load ictheme";
 
+	glyph = load IcGlyph IcGlyph->PATH;
+	if(glyph == nil)
+		raise "fail:load icglyph";
+
 	ic->init();
 	view->init();
 	canvas->init();
 
 	ci = ic->consinfo();
+
 	theme->init(ci);
+	glyph->init(ci);
 
 	CodeNormal = theme->sgr(IcTheme->AttrNormal);
 	CodeWindow = theme->sgr(IcTheme->AttrWindow);
@@ -286,26 +293,20 @@ vline(r: ref IcPaint->Renderer, x, y, h: int, ch, code: string)
 framechars(style: int): array of string
 {
 	a: array of string;
+	f: IcGlyph->Frame;
 
 	a = array[6] of string;
 
-	if(style == IcPaint->FrameDouble){
-		a[0] = "═";
-		a[1] = "║";
-		a[2] = "╔";
-		a[3] = "╗";
-		a[4] = "╚";
-		a[5] = "╝";
-		return a;
-	}
+	if(glyph != nil){
+		f = glyph->frame(style);
 
-	if(style == IcPaint->FrameSingle){
-		a[0] = "─";
-		a[1] = "│";
-		a[2] = "┌";
-		a[3] = "┐";
-		a[4] = "└";
-		a[5] = "┘";
+		a[0] = f.h;
+		a[1] = f.v;
+		a[2] = f.nw;
+		a[3] = f.ne;
+		a[4] = f.sw;
+		a[5] = f.se;
+
 		return a;
 	}
 
@@ -315,6 +316,7 @@ framechars(style: int): array of string
 	a[3] = "+";
 	a[4] = "+";
 	a[5] = "+";
+
 	return a;
 }
 
