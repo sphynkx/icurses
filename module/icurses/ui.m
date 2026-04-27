@@ -64,15 +64,11 @@ IcUi: module
 
 	node: fn(u: ref Ui, parentid, id, kind: string, x, y, w, h: int): int;
 	group: fn(u: ref Ui, parentid, id: string, x, y, w, h: int): int;
+	label: fn(u: ref Ui, parentid, id: string, x, y, w: int, text: string): int;
 	window: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, title: string): int;
 	button: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, label, hotkey, targetid, command: string): int;
 	canvas: fn(u: ref Ui, parentid, id: string, x, y, w, h: int): int;
 
-	#
-	# Value widgets.
-	# hbar uses width w and height 1.
-	# vbar uses width 1 and height h.
-	#
 	hbar: fn(u: ref Ui, parentid, id: string, x, y, w, value, total: int): int;
 	vbar: fn(u: ref Ui, parentid, id: string, x, y, h, value, total: int): int;
 	setbar: fn(u: ref Ui, id: string, value, total: int): int;
@@ -80,6 +76,7 @@ IcUi: module
 	bindkey: fn(u: ref Ui, key, targetid, command: string): int;
 	bindkeyargs: fn(u: ref Ui, key, targetid, command, sarg: string, iarg0, iarg1, iarg2: int): int;
 
+	settext: fn(u: ref Ui, id, text: string): int;
 	setcontent: fn(u: ref Ui, id, content: string): int;
 	setscroll: fn(u: ref Ui, id: string, scroll, scrollpos: int): int;
 	setframe: fn(u: ref Ui, id: string, frame: int): int;

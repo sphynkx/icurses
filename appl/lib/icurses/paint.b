@@ -18,6 +18,7 @@ makecells: fn(n: int, ch, code: string): array of IcPaint->Cell;
 drawnode: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawwindow: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawbutton: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
+drawlabel: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawhbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawvbar: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
 drawcontent: fn(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node);
@@ -746,6 +747,29 @@ drawbutton(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 	putslimit(r, x, y, w, s, code);
 }
 
+drawlabel(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
+{
+	x, y, w: int;
+	text: string;
+
+	if(r == nil || t == nil || n == nil)
+		return;
+
+	x = view->absx(t, n);
+	y = view->absy(t, n);
+	w = n.w;
+
+	if(w <= 0)
+		w = len view->gettext(n);
+	if(w <= 0)
+		return;
+
+	text = view->gettext(n);
+
+	fillrect(r, x, y, w, 1, " ", CodeWindow);
+	putslimit(r, x, y, w, text, CodeWindow);
+}
+
 drawhbar(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 {
 	x, y, w, value, total: int;
@@ -807,6 +831,8 @@ drawnode(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 		drawwindow(r, t, n);
 	else if(n.kind == "button")
 		drawbutton(r, t, n);
+	else if(n.kind == "label")
+		drawlabel(r, t, n);
 	else if(n.kind == "hbar")
 		drawhbar(r, t, n);
 	else if(n.kind == "vbar")

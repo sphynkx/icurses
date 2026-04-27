@@ -294,6 +294,24 @@ group(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int): int
 	return node(u, parentid, id, "group", x, y, w, h);
 }
 
+label(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): int
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	if(w <= 0)
+		w = len text;
+	if(w <= 0)
+		w = 1;
+
+	n = view->newnode(id, "label", "", x, y, w, 1);
+	view->settext(n, text);
+
+	return view->addchildnode(u.tree, parentid, n);
+}
+
 window(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string): int
 {
 	n: ref IcView->Node;
@@ -384,6 +402,21 @@ bindkeyargs(u: ref IcUi->Ui, key, targetid, command, sarg: string, iarg0, iarg1,
 		return -1;
 
 	return keymap->bindargs(u.keymap, key, targetid, command, sarg, iarg0, iarg1, iarg2);
+}
+
+settext(u: ref IcUi->Ui, id, text: string): int
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	view->settext(n, text);
+	return 0;
 }
 
 setcontent(u: ref IcUi->Ui, id, content: string): int
@@ -812,6 +845,15 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "focus.set"){
 		if(n != nil && view->setfocus(u.tree, n.id) == 0){
 			u.status = "focus.set dst=" + m.dst;
+			m.handled = 1;
+		}
+		return m;
+	}
+
+	if(m.cmd == "text.label"){
+		if(n != nil){
+			view->settext(n, m.sarg);
+			u.status = "text.label dst=" + m.dst;
 			m.handled = 1;
 		}
 		return m;
