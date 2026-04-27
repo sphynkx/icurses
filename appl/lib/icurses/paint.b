@@ -1,12 +1,12 @@
 implement IcPaint;
 
-include "icurses/view.m";
 include "icurses/paint.m";
 
 sys: Sys;
 ic: Icurses;
 view: IcView;
 canvas: IcCanvas;
+theme: IcTheme;
 
 idx: fn(r: ref IcPaint->Renderer, x, y: int): int;
 inrange: fn(r: ref IcPaint->Renderer, x, y: int): int;
@@ -28,19 +28,22 @@ putslimit: fn(r: ref IcPaint->Renderer, x, y, maxw: int, text, code: string);
 wraptext: fn(text: string, width: int): array of string;
 appendline: fn(a: array of string, s: string): array of string;
 addword: fn(a: array of string, line, word: string, width: int): (array of string, string);
+
 framechars: fn(style: int): array of string;
 
-CodeNormal: con "0";
-CodeWindow: con "0;37;44";
-CodeFrame:  con "1;37;44";
-CodeTitle:  con "1;33;44";
-CodeButton: con "1;30;46";
-CodeFocus:  con "1;33;41";
-CodeStatus: con "1;30;47";
-CodeScroll: con "1;33;44";
+CodeNormal: string;
+CodeWindow: string;
+CodeFrame: string;
+CodeTitle: string;
+CodeButton: string;
+CodeFocus: string;
+CodeStatus: string;
+CodeScroll: string;
 
 init()
 {
+	ci: Icurses->ConsInfo;
+
 	sys = load Sys Sys->PATH;
 	if(sys == nil)
 		raise "fail:load sys";
@@ -57,9 +60,25 @@ init()
 	if(canvas == nil)
 		raise "fail:load iccanvas";
 
+	theme = load IcTheme IcTheme->PATH;
+	if(theme == nil)
+		raise "fail:load ictheme";
+
 	ic->init();
 	view->init();
 	canvas->init();
+
+	ci = ic->consinfo();
+	theme->init(ci);
+
+	CodeNormal = theme->sgr(IcTheme->AttrNormal);
+	CodeWindow = theme->sgr(IcTheme->AttrWindow);
+	CodeFrame = theme->sgr(IcTheme->AttrFrame);
+	CodeTitle = theme->sgr(IcTheme->AttrTitle);
+	CodeButton = theme->sgr(IcTheme->AttrButton);
+	CodeFocus = theme->sgr(IcTheme->AttrFocus);
+	CodeStatus = theme->sgr(IcTheme->AttrStatus);
+	CodeScroll = theme->sgr(IcTheme->AttrScroll);
 }
 
 sig(ch, code: string): int
@@ -78,6 +97,11 @@ sig(ch, code: string): int
 initcell(ch, code: string): IcPaint->Cell
 {
 	c: IcPaint->Cell;
+
+	if(ch == "")
+		ch = " ";
+	if(code == "")
+		code = CodeNormal;
 
 	c.ch = ch;
 	c.code = code;
@@ -316,46 +340,27 @@ appendline(a: array of string, s: string): array of string
 
 addword(a: array of string, line, word: string, width: int): (array of string, string)
 {
-	part: string;
-
 	if(width <= 0)
-		return (a, "");
+		width = 1;
 
-	if(word == "")
-		return (a, line);
-
-	if(line == ""){
-		while(len word > width){
-			part = word[0:width];
-			a = appendline(a, part);
-			word = word[width:];
-		}
+	if(line == "")
 		return (a, word);
-	}
 
 	if(len line + 1 + len word <= width)
 		return (a, line + " " + word);
 
 	a = appendline(a, line);
-	line = "";
-
-	while(len word > width){
-		part = word[0:width];
-		a = appendline(a, part);
-		word = word[width:];
-	}
-
 	return (a, word);
 }
 
 wraptext(text: string, width: int): array of string
 {
 	a: array of string;
+	i, start: int;
 	line, word: string;
-	i: int;
 
 	if(width <= 0)
-		return array[0] of string;
+		width = 1;
 
 	a = array[0] of string;
 	line = "";
@@ -363,26 +368,56 @@ wraptext(text: string, width: int): array of string
 
 	for(i = 0; i < len text; i++){
 		if(text[i] == '\n'){
-			(a, line) = addword(a, line, word, width);
-			word = "";
+			if(word != ""){
+				(a, line) = addword(a, line, word, width);
+				word = "";
+			}
 			a = appendline(a, line);
 			line = "";
 			continue;
 		}
 
-		if(text[i] == ' ' || text[i] == '\t'){
-			(a, line) = addword(a, line, word, width);
-			word = "";
+		if(text[i] == ' ' || text[i] == '\t' || text[i] == '\r'){
+			if(word != ""){
+				(a, line) = addword(a, line, word, width);
+				word = "";
+			}
 			continue;
 		}
 
-		word += text[i:i+1];
+		start = i;
+		while(i < len text && text[i] != ' ' && text[i] != '\t' && text[i] != '\r' && text[i] != '\n')
+			i++;
+
+		word = text[start:i];
+		i--;
+
+		if(len word > width){
+			if(line != ""){
+				a = appendline(a, line);
+				line = "";
+			}
+
+			start = 0;
+			while(start < len word){
+				i = start + width;
+				if(i > len word)
+					i = len word;
+				a = appendline(a, word[start:i]);
+				start = i;
+			}
+			word = "";
+		}
 	}
 
-	(a, line) = addword(a, line, word, width);
+	if(word != "")
+		(a, line) = addword(a, line, word, width);
 
 	if(line != "")
 		a = appendline(a, line);
+
+	if(len a == 0)
+		a = appendline(a, "");
 
 	return a;
 }
