@@ -10,6 +10,7 @@ TARG=\
 	menu.dis\
 	msg.dis\
 	paint.dis\
+	slider.dis\
 	text.dis\
 	theme.dis\
 	ui.dis\
@@ -27,6 +28,7 @@ SYSMODULES=\
 	icurses/menu.m\
 	icurses/msg.m\
 	icurses/paint.m\
+	icurses/slider.m\
 	icurses/text.m\
 	icurses/theme.m\
 	icurses/ui.m\

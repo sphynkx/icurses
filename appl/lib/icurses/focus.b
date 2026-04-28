@@ -134,6 +134,25 @@ handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 	if(u == nil || u.tree == nil)
 		return msg->none();
 
+	#
+	# Handle Tab and BackTab explicitly first. Some environments report
+	# Tab as raw code 9, and relying only on navkind() makes debugging
+	# focus traversal harder.
+	#
+	if(k == 9){
+		id = next(u);
+		if(id != "")
+			return focusmsg(u, id);
+		return msg->none();
+	}
+
+	if(k == Icurses->Kbacktab){
+		id = prev(u);
+		if(id != "")
+			return focusmsg(u, id);
+		return msg->none();
+	}
+
 	nav = ic->navkind(k);
 
 	if(nav == Icurses->NavNext || nav == Icurses->NavRight || nav == Icurses->NavDown){
