@@ -4,6 +4,7 @@ TARG=\
 	canvas.dis\
 	control.dis\
 	focus.dis\
+	form.dis\
 	glyph.dis\
 	history.dis\
 	icurses.dis\
@@ -24,6 +25,7 @@ SYSMODULES=\
 	icurses/canvas.m\
 	icurses/control.m\
 	icurses/focus.m\
+	icurses/form.m\
 	icurses/glyph.m\
 	icurses/history.m\
 	icurses/icurses.m\

@@ -228,12 +228,18 @@ prev(h: ref IcHistory->History): string
 	if(h == nil || h.items == nil || len h.items == 0)
 		return "";
 
+	#
+	# Visual semantics:
+	# history items are rendered from index 0 downward.
+	# "Previous" moves visually up, toward a smaller index.
+	# If no item is selected yet, Up starts from the bottom item.
+	#
 	if(h.sel < 0)
-		h.sel = 0;
-	else if(h.sel + 1 < len h.items)
-		h.sel++;
+		h.sel = len h.items - 1;
+	else if(h.sel > 0)
+		h.sel--;
 	else if(h.wrap)
-		h.sel = 0;
+		h.sel = len h.items - 1;
 
 	return current(h);
 }
@@ -243,12 +249,18 @@ next(h: ref IcHistory->History): string
 	if(h == nil || h.items == nil || len h.items == 0)
 		return "";
 
+	#
+	# Visual semantics:
+	# history items are rendered from index 0 downward.
+	# "Next" moves visually down, toward a larger index.
+	# If no item is selected yet, Down starts from the top item.
+	#
 	if(h.sel < 0)
 		h.sel = 0;
-	else if(h.sel > 0)
-		h.sel--;
+	else if(h.sel + 1 < len h.items)
+		h.sel++;
 	else if(h.wrap)
-		h.sel = len h.items - 1;
+		h.sel = 0;
 
 	return current(h);
 }
