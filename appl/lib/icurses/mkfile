@@ -5,6 +5,7 @@ TARG=\
 	glyph.dis\
 	icurses.dis\
 	keymap.dis\
+	menu.dis\
 	msg.dis\
 	paint.dis\
 	text.dis\
@@ -19,6 +20,7 @@ SYSMODULES=\
 	icurses/glyph.m\
 	icurses/icurses.m\
 	icurses/keymap.m\
+	icurses/menu.m\
 	icurses/msg.m\
 	icurses/paint.m\
 	icurses/text.m\
