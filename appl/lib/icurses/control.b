@@ -6,10 +6,13 @@ sys: Sys;
 ui: IcUi;
 view: IcView;
 msg: IcMsg;
+ic: Icurses;
 
 DefaultCommand: con "control.change";
+ControlMagic: con 17219;
 
 findnode: fn(u: ref IcUi->Ui, id: string): ref IcView->Node;
+iscontrolnode: fn(n: ref IcView->Node): int;
 ensurewidth: fn(style: int, label: string, w: int): int;
 rawlabel: fn(n: ref IcView->Node): string;
 rendertext: fn(n: ref IcView->Node): string;
@@ -19,6 +22,9 @@ makemsg: fn(n: ref IcView->Node): IcMsg->Msg;
 samegroup: fn(n: ref IcView->Node, groupid: string): int;
 clearradiogroup: fn(u: ref IcUi->Ui, groupid, exceptid: string);
 setgroupselected: fn(u: ref IcUi->Ui, groupid, id: string);
+hotkeymatch: fn(k: int, hotkey: string): int;
+findcontrolhotkeynode: fn(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node;
+activate: fn(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg;
 
 init()
 {
@@ -38,6 +44,10 @@ init()
 	if(msg == nil)
 		raise "fail:load icmsg";
 
+	ic = load Icurses Icurses->PATH;
+	if(ic == nil)
+		raise "fail:load icurses";
+
 	#
 	# IcControl uses IcUi helper constructors and IcView node operations.
 	# Initialize the private module instances before calling them.
@@ -45,6 +55,7 @@ init()
 	ui->init();
 	view->init();
 	msg->init();
+	ic->init();
 }
 
 findnode(u: ref IcUi->Ui, id: string): ref IcView->Node
@@ -53,6 +64,26 @@ findnode(u: ref IcUi->Ui, id: string): ref IcView->Node
 		return nil;
 
 	return view->find(u.tree, id);
+}
+
+iscontrolnode(n: ref IcView->Node): int
+{
+	if(n == nil)
+		return 0;
+
+	if(n.iarg2 != ControlMagic)
+		return 0;
+
+	if(n.iarg1 == IcControl->StyleCheckbox)
+		return 1;
+
+	if(n.iarg1 == IcControl->StyleRadio)
+		return 1;
+
+	if(n.iarg1 == IcControl->StyleSwitch)
+		return 1;
+
+	return 0;
 }
 
 ensurewidth(style: int, label: string, w: int): int
@@ -186,14 +217,14 @@ makemsg(n: ref IcView->Node): IcMsg->Msg
 	m.sarg = n.sarg;
 	m.iarg0 = n.iarg0;
 	m.iarg1 = n.iarg1;
-	m.iarg2 = n.iarg2;
+	m.iarg2 = 0;
 
 	return m;
 }
 
 samegroup(n: ref IcView->Node, groupid: string): int
 {
-	if(n == nil)
+	if(!iscontrolnode(n))
 		return 0;
 
 	if(n.sarg != groupid)
@@ -247,6 +278,86 @@ setgroupselected(u: ref IcUi->Ui, groupid, id: string)
 	view->setargs(g, id, g.iarg0, g.iarg1, g.iarg2);
 }
 
+hotkeymatch(k: int, hotkey: string): int
+{
+	h: int;
+	kn: string;
+
+	if(hotkey == "")
+		return 0;
+
+	kn = ic->keyname(k);
+	if(kn == hotkey)
+		return 1;
+
+	if(len hotkey != 1)
+		return 0;
+
+	h = int hotkey[0];
+
+	if(k == h)
+		return 1;
+
+	if(k >= 'a' && k <= 'z' && h >= 'A' && h <= 'Z'){
+		if(k - 'a' + 'A' == h)
+			return 1;
+	}
+
+	if(k >= 'A' && k <= 'Z' && h >= 'a' && h <= 'z'){
+		if(k - 'A' + 'a' == h)
+			return 1;
+	}
+
+	return 0;
+}
+
+findcontrolhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
+{
+	n, c, r: ref IcView->Node;
+	i: int;
+
+	if(u == nil || u.tree == nil || id == "")
+		return nil;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return nil;
+
+	if(iscontrolnode(n) && view->isvisibletree(u.tree, n.id) && view->isenabledtree(u.tree, n.id)){
+		if(hotkeymatch(k, view->gethotkey(n)))
+			return n;
+	}
+
+	for(i = 0; i < view->childcount(n); i++){
+		c = view->find(u.tree, view->childat(n, i));
+		if(c == nil)
+			continue;
+
+		r = findcontrolhotkeynode(u, c.id, k);
+		if(r != nil)
+			return r;
+	}
+
+	return nil;
+}
+
+activate(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg
+{
+	if(u == nil || u.tree == nil)
+		return msg->none();
+
+	if(!iscontrolnode(n))
+		return msg->none();
+
+	if(!view->isenabledtree(u.tree, n.id))
+		return msg->none();
+
+	if(n.iarg1 == IcControl->StyleRadio)
+		return selectradio(u, n.id);
+
+	return toggle(u, n.id);
+}
+
 group(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, mode: int): int
 {
 	n: ref IcView->Node;
@@ -290,7 +401,7 @@ checkbox(u: ref IcUi->Ui, parentid, id: string,
 		return -1;
 
 	view->setcontent(n, label);
-	view->setargs(n, "", checked != 0, IcControl->StyleCheckbox, 0);
+	view->setargs(n, "", checked != 0, IcControl->StyleCheckbox, ControlMagic);
 	rendernode(n);
 
 	return 0;
@@ -319,7 +430,7 @@ radio(u: ref IcUi->Ui, groupid, id: string,
 		return -1;
 
 	view->setcontent(n, label);
-	view->setargs(n, groupid, 0, IcControl->StyleRadio, 0);
+	view->setargs(n, groupid, 0, IcControl->StyleRadio, ControlMagic);
 	rendernode(n);
 
 	if(checked)
@@ -348,7 +459,7 @@ switchbox(u: ref IcUi->Ui, parentid, id: string,
 		return -1;
 
 	view->setcontent(n, label);
-	view->setargs(n, "", on != 0, IcControl->StyleSwitch, 0);
+	view->setargs(n, "", on != 0, IcControl->StyleSwitch, ControlMagic);
 	rendernode(n);
 
 	return 0;
@@ -359,7 +470,7 @@ checked(u: ref IcUi->Ui, id: string): int
 	n: ref IcView->Node;
 
 	n = findnode(u, id);
-	if(n == nil)
+	if(!iscontrolnode(n))
 		return 0;
 
 	return n.iarg0 != 0;
@@ -371,7 +482,7 @@ setchecked(u: ref IcUi->Ui, id: string, checked: int): int
 	groupid: string;
 
 	n = findnode(u, id);
-	if(n == nil)
+	if(!iscontrolnode(n))
 		return -1;
 
 	if(n.iarg1 == IcControl->StyleRadio && checked){
@@ -400,10 +511,10 @@ toggle(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	v: int;
 
 	n = findnode(u, id);
-	if(n == nil)
+	if(!iscontrolnode(n))
 		return msg->none();
 
-	if(!view->isenabled(n))
+	if(!view->isenabledtree(u.tree, n.id))
 		return msg->none();
 
 	if(n.iarg1 == IcControl->StyleRadio)
@@ -423,10 +534,10 @@ selectradio(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	groupid: string;
 
 	n = findnode(u, id);
-	if(n == nil)
+	if(!iscontrolnode(n))
 		return msg->none();
 
-	if(!view->isenabled(n))
+	if(!view->isenabledtree(u.tree, n.id))
 		return msg->none();
 
 	if(n.iarg1 != IcControl->StyleRadio)
@@ -468,6 +579,39 @@ setenabled(u: ref IcUi->Ui, id: string, enabled: int): int
 	else
 		view->disable(n);
 
-	rendernode(n);
+	if(iscontrolnode(n))
+		rendernode(n);
+
 	return 0;
+}
+
+activatefocused(u: ref IcUi->Ui): IcMsg->Msg
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return msg->none();
+
+	n = view->focusnode(u.tree);
+	return activate(u, n);
+}
+
+handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
+{
+	n: ref IcView->Node;
+
+	if(u == nil || u.tree == nil)
+		return msg->none();
+
+	n = findcontrolhotkeynode(u, u.tree.rootid, k);
+	if(n != nil)
+		return activate(u, n);
+
+	if(k == ' ')
+		return activatefocused(u);
+
+	if(ic->isconfirm(k))
+		return activatefocused(u);
+
+	return msg->none();
 }

@@ -37,4 +37,7 @@ IcControl: module
 
 	selected: fn(u: ref IcUi->Ui, groupid: string): string;
 	setenabled: fn(u: ref IcUi->Ui, id: string, enabled: int): int;
+
+	activatefocused: fn(u: ref IcUi->Ui): IcMsg->Msg;
+	handlekey: fn(u: ref IcUi->Ui, k: int): IcMsg->Msg;
 };

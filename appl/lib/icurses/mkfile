@@ -3,6 +3,7 @@
 TARG=\
 	canvas.dis\
 	control.dis\
+	focus.dis\
 	glyph.dis\
 	icurses.dis\
 	keymap.dis\
@@ -19,6 +20,7 @@ MODULES=\
 SYSMODULES=\
 	icurses/canvas.m\
 	icurses/control.m\
+	icurses/focus.m\
 	icurses/glyph.m\
 	icurses/icurses.m\
 	icurses/keymap.m\
