@@ -7,10 +7,15 @@ IcHistory: module
 	History: adt
 	{
 		inputid:  string;
+		popupid:  string;
+
 		items:    array of string;
 		sel:      int;
 		maxitems: int;
 		wrap:     int;
+
+		visible:  int;
+		rows:     int;
 	};
 
 	init: fn();
@@ -26,6 +31,14 @@ IcHistory: module
 
 	prev: fn(h: ref History): string;
 	next: fn(h: ref History): string;
+
+	popup: fn(u: ref IcUi->Ui, h: ref History,
+		parentid, id: string,
+		x, y, w, rows: int): int;
+
+	show: fn(u: ref IcUi->Ui, h: ref History): int;
+	hide: fn(u: ref IcUi->Ui, h: ref History): int;
+	isvisible: fn(h: ref History): int;
 
 	apply: fn(u: ref IcUi->Ui, h: ref History): IcMsg->Msg;
 	submit: fn(u: ref IcUi->Ui, h: ref History): IcMsg->Msg;

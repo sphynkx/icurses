@@ -3,12 +3,14 @@ implement IcHistory;
 include "icurses/history.m";
 
 sys: Sys;
+ui: IcUi;
 input: IcInput;
 view: IcView;
 msg: IcMsg;
 ic: Icurses;
 
 DefaultMaxItems: con 32;
+DefaultRows: con 5;
 
 none: fn(): IcMsg->Msg;
 focusedid: fn(u: ref IcUi->Ui): string;
@@ -20,11 +22,21 @@ truncateitems: fn(a: array of string, maxitems: int): array of string;
 
 historymsg: fn(h: ref IcHistory->History, cmd, value: string): IcMsg->Msg;
 
+lineid: fn(popupid: string, i: int): string;
+clip: fn(s: string, w: int): string;
+padright: fn(s: string, w: int): string;
+settreevisible: fn(u: ref IcUi->Ui, id: string, visible: int);
+updatepopup: fn(u: ref IcUi->Ui, h: ref IcHistory->History): int;
+
 init()
 {
 	sys = load Sys Sys->PATH;
 	if(sys == nil)
 		raise "fail:load sys";
+
+	ui = load IcUi IcUi->PATH;
+	if(ui == nil)
+		raise "fail:load icui";
 
 	input = load IcInput IcInput->PATH;
 	if(input == nil)
@@ -42,6 +54,7 @@ init()
 	if(ic == nil)
 		raise "fail:load icurses";
 
+	ui->init();
 	input->init();
 	view->init();
 	msg->init();
@@ -62,10 +75,13 @@ new(inputid: string, maxitems: int): ref IcHistory->History
 
 	h = ref IcHistory->History;
 	h.inputid = inputid;
+	h.popupid = "";
 	h.items = array[0] of string;
 	h.sel = -1;
 	h.maxitems = maxitems;
 	h.wrap = 1;
+	h.visible = 0;
+	h.rows = DefaultRows;
 
 	return h;
 }
@@ -282,6 +298,195 @@ historymsg(h: ref IcHistory->History, cmd, value: string): IcMsg->Msg
 	return m;
 }
 
+lineid(popupid: string, i: int): string
+{
+	return popupid + "." + sys->sprint("%d", i);
+}
+
+clip(s: string, w: int): string
+{
+	if(w <= 0)
+		return "";
+
+	if(len s <= w)
+		return s;
+
+	return s[0:w];
+}
+
+padright(s: string, w: int): string
+{
+	if(w <= 0)
+		return "";
+
+	s = clip(s, w);
+
+	while(len s < w)
+		s += " ";
+
+	return s;
+}
+
+settreevisible(u: ref IcUi->Ui, id: string, visible: int)
+{
+	n, c: ref IcView->Node;
+	i: int;
+
+	if(u == nil || u.tree == nil || id == "")
+		return;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return;
+
+	if(visible)
+		view->show(n);
+	else
+		view->hide(n);
+
+	for(i = 0; i < view->childcount(n); i++){
+		c = view->find(u.tree, view->childat(n, i));
+		if(c != nil)
+			settreevisible(u, c.id, visible);
+	}
+}
+
+popup(u: ref IcUi->Ui, h: ref IcHistory->History,
+	parentid, id: string,
+	x, y, w, rows: int): int
+{
+	n: ref IcView->Node;
+	i: int;
+
+	if(u == nil || u.tree == nil || h == nil)
+		return -1;
+
+	if(id == "")
+		return -1;
+
+	if(w <= 0)
+		w = 20;
+
+	if(rows <= 0)
+		rows = DefaultRows;
+
+	n = view->find(u.tree, id);
+
+	if(n == nil){
+		if(ui->group(u, parentid, id, x, y, w, rows) < 0)
+			return -1;
+
+		for(i = 0; i < rows; i++){
+			if(ui->label(u, id, lineid(id, i), 0, i, w, "") < 0)
+				return -1;
+		}
+	}
+
+	h.popupid = id;
+	h.rows = rows;
+	h.visible = 0;
+
+	updatepopup(u, h);
+	settreevisible(u, id, 0);
+
+	return 0;
+}
+
+updatepopup(u: ref IcUi->Ui, h: ref IcHistory->History): int
+{
+	i, idx, top, rows, w: int;
+	id, s, mark: string;
+	n, line: ref IcView->Node;
+
+	if(u == nil || u.tree == nil || h == nil)
+		return -1;
+
+	if(h.popupid == "")
+		return 0;
+
+	n = view->find(u.tree, h.popupid);
+	if(n == nil)
+		return -1;
+
+	rows = h.rows;
+	if(rows <= 0)
+		rows = DefaultRows;
+
+	w = n.w;
+	if(w <= 0)
+		w = 20;
+
+	top = 0;
+	if(h.sel >= rows)
+		top = h.sel - rows + 1;
+
+	if(top < 0)
+		top = 0;
+
+	for(i = 0; i < rows; i++){
+		idx = top + i;
+		id = lineid(h.popupid, i);
+
+		line = view->find(u.tree, id);
+		if(line == nil)
+			continue;
+
+		if(h.items == nil || idx >= len h.items){
+			s = "";
+		}else{
+			mark = "  ";
+			if(idx == h.sel)
+				mark = "> ";
+
+			s = mark + h.items[idx];
+		}
+
+		if(s == "")
+			s = "  ";
+
+		view->settext(line, padright(s, w));
+	}
+
+	return 0;
+}
+
+show(u: ref IcUi->Ui, h: ref IcHistory->History): int
+{
+	if(u == nil || h == nil)
+		return -1;
+
+	if(h.popupid == "")
+		return 0;
+
+	updatepopup(u, h);
+	h.visible = 1;
+	settreevisible(u, h.popupid, 1);
+
+	return 0;
+}
+
+hide(u: ref IcUi->Ui, h: ref IcHistory->History): int
+{
+	if(u == nil || h == nil)
+		return -1;
+
+	if(h.popupid == "")
+		return 0;
+
+	h.visible = 0;
+	settreevisible(u, h.popupid, 0);
+
+	return 0;
+}
+
+isvisible(h: ref IcHistory->History): int
+{
+	if(h == nil)
+		return 0;
+
+	return h.visible != 0;
+}
+
 apply(u: ref IcUi->Ui, h: ref IcHistory->History): IcMsg->Msg
 {
 	value: string;
@@ -306,6 +511,8 @@ apply(u: ref IcUi->Ui, h: ref IcHistory->History): IcMsg->Msg
 	m.iarg2 = h.maxitems;
 	m.handled = 1;
 
+	updatepopup(u, h);
+
 	return m;
 }
 
@@ -323,6 +530,7 @@ submit(u: ref IcUi->Ui, h: ref IcHistory->History): IcMsg->Msg
 
 	value = m.sarg;
 	add(h, value);
+	hide(u, h);
 
 	return m;
 }
@@ -330,18 +538,23 @@ submit(u: ref IcUi->Ui, h: ref IcHistory->History): IcMsg->Msg
 handlekey(u: ref IcUi->Ui, h: ref IcHistory->History, k: int): IcMsg->Msg
 {
 	value: string;
+	m: IcMsg->Msg;
 
 	if(u == nil || h == nil)
 		return none();
 
-	if(!matchesfocusedinput(u, h))
+	if(!matchesfocusedinput(u, h)){
+		if(h.visible)
+			hide(u, h);
 		return none();
+	}
 
 	if(k == Icurses->Kup){
 		value = prev(h);
 		if(value == "")
 			return none();
 
+		show(u, h);
 		return apply(u, h);
 	}
 
@@ -350,7 +563,18 @@ handlekey(u: ref IcUi->Ui, h: ref IcHistory->History, k: int): IcMsg->Msg
 		if(value == "")
 			return none();
 
+		show(u, h);
 		return apply(u, h);
+	}
+
+	if(ic->iscancel(k)){
+		if(h.visible){
+			hide(u, h);
+			m = historymsg(h, "history.hide", "");
+			return m;
+		}
+
+		return none();
 	}
 
 	if(ic->isconfirm(k))
