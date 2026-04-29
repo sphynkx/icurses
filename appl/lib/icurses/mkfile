@@ -11,6 +11,7 @@ TARG=\
 	input.dis\
 	keymap.dis\
 	menu.dis\
+	mouse.dis\
 	msg.dis\
 	paint.dis\
 	slider.dis\
@@ -32,6 +33,7 @@ SYSMODULES=\
 	icurses/input.m\
 	icurses/keymap.m\
 	icurses/menu.m\
+	icurses/mouse.m\
 	icurses/msg.m\
 	icurses/paint.m\
 	icurses/slider.m\
