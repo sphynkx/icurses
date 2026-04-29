@@ -9,10 +9,20 @@ buf: array of byte;
 pending: string;
 lastbuttons: int;
 
+screenx: int;
+screeny: int;
+
+ConsinfoPath: con "/dev/consinfo";
+
 skipspace: fn(s: string, i: int): int;
 parseintat: fn(s: string, i: int): (int, int, int);
+paramint: fn(s, key: string, def: int): int;
+loadscreenoffset: fn();
+normalize: fn(e: Event): Event;
+
 appendname: fn(s, name: string): string;
 readline: fn(): string;
+haspendingline: fn(): int;
 empty: fn(): Event;
 marktransition: fn(e: Event): Event;
 
@@ -23,15 +33,20 @@ init()
 		raise "fail:load sys";
 
 	mousefd = nil;
-	buf = array[128] of byte;
+	buf = array[256] of byte;
 	pending = "";
 	lastbuttons = 0;
+
+	screenx = 0;
+	screeny = 0;
 }
 
 open(): int
 {
 	if(mousefd != nil)
 		return 0;
+
+	loadscreenoffset();
 
 	mousefd = sys->open(MousePath, Sys->OREAD);
 	if(mousefd == nil)
@@ -47,6 +62,8 @@ close()
 	mousefd = nil;
 	pending = "";
 	lastbuttons = 0;
+	screenx = 0;
+	screeny = 0;
 }
 
 empty(): Event
@@ -107,6 +124,85 @@ parseintat(s: string, i: int): (int, int, int)
 	return (v * sign, i, ok);
 }
 
+paramint(s, key: string, def: int): int
+{
+	i, j, v, ok: int;
+	prefix: string;
+
+	prefix = key + "=";
+
+	for(i = 0; i < len s; i++){
+		if(i > 0 && s[i - 1] != '\n')
+			continue;
+
+		if(i + len prefix > len s)
+			continue;
+
+		if(s[i:i + len prefix] != prefix)
+			continue;
+
+		j = i + len prefix;
+		(v, j, ok) = parseintat(s, j);
+		if(ok)
+			return v;
+
+		return def;
+	}
+
+	return def;
+}
+
+loadscreenoffset()
+{
+	fd: ref Sys->FD;
+	cbuf: array of byte;
+	n: int;
+	s: string;
+
+	screenx = 0;
+	screeny = 0;
+
+	fd = sys->open(ConsinfoPath, Sys->OREAD);
+	if(fd == nil)
+		return;
+
+	cbuf = array[1024] of byte;
+	n = sys->read(fd, cbuf, len cbuf);
+	if(n <= 0)
+		return;
+
+	s = string cbuf[0:n];
+
+	screenx = paramint(s, "left", 0);
+	screeny = paramint(s, "top", 0);
+
+	if(screenx < 0)
+		screenx = 0;
+
+	if(screeny < 0)
+		screeny = 0;
+}
+
+normalize(e: Event): Event
+{
+	if(!e.ok)
+		return e;
+
+	#
+	# /dev/emouse can be backed by console buffer coordinates.
+	# Icurses renderer and IcHit use viewport-relative coordinates.
+	# For MinGW console, subtract /dev/consinfo left/top when raw
+	# coordinates are clearly buffer-relative.
+	#
+	if(screenx > 0 && e.x >= screenx)
+		e.x -= screenx;
+
+	if(screeny > 0 && e.y >= screeny)
+		e.y -= screeny;
+
+	return e;
+}
+
 parse(s: string): Event
 {
 	e: Event;
@@ -143,7 +239,8 @@ parse(s: string): Event
 
 	e.ok = 1;
 	e.kind = KindMove;
-	return e;
+
+	return normalize(e);
 }
 
 marktransition(e: Event): Event
@@ -154,6 +251,11 @@ marktransition(e: Event): Event
 		return e;
 
 	if(e.buttons & WheelMask){
+		#
+		# Wheel events are momentary and must not reset physical
+		# button state.  Resetting lastbuttons here makes later
+		# press/release classification unstable.
+		#
 		e.kind = KindWheel;
 		e.changed = e.buttons & WheelMask;
 		e.pressed = e.buttons & WheelMask;
@@ -182,6 +284,18 @@ marktransition(e: Event): Event
 
 	lastbuttons = buttons;
 	return e;
+}
+
+haspendingline(): int
+{
+	i: int;
+
+	for(i = 0; i < len pending; i++){
+		if(pending[i] == '\n')
+			return 1;
+	}
+
+	return 0;
 }
 
 readline(): string
@@ -213,16 +327,45 @@ readline(): string
 read(): Event
 {
 	line: string;
-	e: Event;
+	e, latestmove: Event;
+	havemove: int;
+
+	latestmove = empty();
+	havemove = 0;
 
 	for(;;){
 		line = readline();
-		if(line == "")
+		if(line == ""){
+			if(havemove)
+				return latestmove;
 			return empty();
+		}
 
 		e = parse(line);
-		if(e.ok)
-			return marktransition(e);
+		if(!e.ok)
+			continue;
+
+		e = marktransition(e);
+
+		#
+		# If a terminal floods passive hover motion, do not force UI
+		# code to process every intermediate move before seeing click
+		# events already present in the local pending buffer.
+		#
+		# We only coalesce ordinary move events.  Press/release/drag/wheel
+		# are returned immediately and in order.
+		#
+		if(e.kind == KindMove && e.buttons == 0){
+			latestmove = e;
+			havemove = 1;
+
+			if(haspendingline())
+				continue;
+
+			return latestmove;
+		}
+
+		return e;
 	}
 }
 

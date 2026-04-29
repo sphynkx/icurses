@@ -7,6 +7,7 @@ TARG=\
 	form.dis\
 	glyph.dis\
 	history.dis\
+	hit.dis\
 	icurses.dis\
 	input.dis\
 	keymap.dis\
@@ -29,6 +30,7 @@ SYSMODULES=\
 	icurses/form.m\
 	icurses/glyph.m\
 	icurses/history.m\
+	icurses/hit.m\
 	icurses/icurses.m\
 	icurses/input.m\
 	icurses/keymap.m\
