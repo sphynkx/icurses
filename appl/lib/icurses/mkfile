@@ -2,6 +2,7 @@
 
 TARG=\
 	actions.dis\
+	app.dis\
 	button.dis\
 	canvas.dis\
 	control.dis\
@@ -28,6 +29,7 @@ MODULES=\
 
 SYSMODULES=\
 	icurses/actions.m\
+	icurses/app.m\
 	icurses/button.m\
 	icurses/canvas.m\
 	icurses/control.m\
