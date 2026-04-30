@@ -1,18 +1,17 @@
 <../../../mkconfig
 
 TARG=\
+	button.dis\
 	canvas.dis\
 	control.dis\
 	focus.dis\
 	form.dis\
 	glyph.dis\
 	history.dis\
-	hit.dis\
 	icurses.dis\
 	input.dis\
 	keymap.dis\
 	menu.dis\
-	mouse.dis\
 	msg.dis\
 	paint.dis\
 	slider.dis\
@@ -24,18 +23,17 @@ TARG=\
 MODULES=\
 
 SYSMODULES=\
+	icurses/button.m\
 	icurses/canvas.m\
 	icurses/control.m\
 	icurses/focus.m\
 	icurses/form.m\
 	icurses/glyph.m\
 	icurses/history.m\
-	icurses/hit.m\
 	icurses/icurses.m\
 	icurses/input.m\
 	icurses/keymap.m\
 	icurses/menu.m\
-	icurses/mouse.m\
 	icurses/msg.m\
 	icurses/paint.m\
 	icurses/slider.m\
