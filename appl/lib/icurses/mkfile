@@ -1,6 +1,7 @@
 <../../../mkconfig
 
 TARG=\
+	actions.dis\
 	button.dis\
 	canvas.dis\
 	control.dis\
@@ -26,6 +27,7 @@ TARG=\
 MODULES=\
 
 SYSMODULES=\
+	icurses/actions.m\
 	icurses/button.m\
 	icurses/canvas.m\
 	icurses/control.m\
