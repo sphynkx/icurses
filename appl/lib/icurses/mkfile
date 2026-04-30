@@ -13,6 +13,7 @@ TARG=\
 	keymap.dis\
 	list.dis\
 	menu.dis\
+	menunav.dis\
 	msg.dis\
 	paint.dis\
 	slider.dis\
@@ -37,6 +38,7 @@ SYSMODULES=\
 	icurses/keymap.m\
 	icurses/list.m\
 	icurses/menu.m\
+	icurses/menunav.m\
 	icurses/msg.m\
 	icurses/paint.m\
 	icurses/slider.m\
