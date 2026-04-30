@@ -16,6 +16,7 @@ TARG=\
 	list.dis\
 	menu.dis\
 	menunav.dis\
+	mouse.dis\
 	msg.dis\
 	paint.dis\
 	slider.dis\
@@ -43,6 +44,7 @@ SYSMODULES=\
 	icurses/list.m\
 	icurses/menu.m\
 	icurses/menunav.m\
+	icurses/mouse.m\
 	icurses/msg.m\
 	icurses/paint.m\
 	icurses/slider.m\
