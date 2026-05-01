@@ -8,45 +8,88 @@ Matrix: module
 	init: fn(nil: ref Draw->Context, nil: list of string);
 };
 
+#
+# Loaded runtime modules.
+#
+# sys provides Inferno system calls.
+# ui is the high-level icurses UI facade.
+# ic provides low-level terminal/keyboard helpers and /dev/consinfo parsing.
+# msg provides message constants and constructors used by UI dispatch.
+#
 sys: Sys;
 ui: IcUi;
 ic: Icurses;
 msg: IcMsg;
 
+#
+# Terminal output FD. The demo writes directly to stdout for fast animation,
+# while still keeping the icurses canvas state synchronized.
+#
 out: ref Sys->FD;
 
 #
-# Fallback terminal size used when Icurses->consinfo() is unavailable
-# or reports an unusable geometry.
+# Safe fallback terminal size. Used when /dev/consinfo is missing or reports
+# dimensions too small for the demo.
 #
 DefaultW: con 80;
 DefaultH: con 24;
 
 #
-# Runtime terminal geometry read through Icurses->consinfo().
-# statusy0/statusy1 reserve the last two rows for icurses status/help.
+# Runtime terminal geometry.
+#
+# cw/ch are columns and rows.
+# statusy0/statusy1 reserve the last two rows for icurses help/status lines.
 #
 cw: int;
 ch: int;
 statusy0: int;
 statusy1: int;
 
+#
+# ID of the icurses canvas node used as the backing store for the animation.
+#
 CanvasId: con "canvas.matrix";
 
 #
-# Character sets used by the matrix streams.
-# CJK glyphs may be double-width depending on terminal/font support.
+# Character sets used by streams.
 #
-AsciiChars: con "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-CyrillicChars: con "АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЭЮЯабвгдежзиклмнопрстуфхцчшэюя";
+# ASCII and Cyrillic are safe on most terminals.
+# CJK and Matrix glyph sets look best on UTF-8 terminals with suitable fonts.
+# Depending on terminal/font configuration, some glyphs may render double-width.
+#
+AsciiChars: con "0123456789+=&%$?#№ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+CyrillicChars: con "1234567890+=&%$?#№АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЭЮЯабвгдежзиклмнопрстуфхцчшэюя";
 CjkChars: con "日月火水木金土天地山川森林雨風雷電光闇龍鳥魚人心夢影空海石花竹門道星";
 
-CharsetAscii: con 0;
+#
+# Original Matrix-style glyph orders:
+# https://github.com/Rezmason/matrix/blob/master/glyph%20order.txt
+#
+RevolChars: con "モエヤキオカ7ケサスz152ヨタワ4ネヌナ98ヒ0ホア3ウ セ¦:\"꞊ミラリ╌ツテニハソ▪—<>0|+*コシマムメ";
+ResurChars: con "モエヤキオカ7ケサスz152ヨタワ4ネヌナ98ヒ0ホア3ウ セ¦:\"꞊ミラリ╌ツテニハソコ—<ム0|*▪メシマ>+";
+
+#
+# Charset mode constants.
+#
+# The actual cycling order is terminal-dependent:
+#
+#   UTF-8 terminals:
+#     Revol -> Resur -> CJK -> ASCII -> Cyrillic -> Revol
+#
+#   non-UTF-8 terminals:
+#     ASCII -> Cyrillic -> Revol -> Resur -> CJK -> ASCII
+#
+CharsetAscii:    con 0;
 CharsetCyrillic: con 1;
-CharsetCjk: con 2;
+CharsetCjk:      con 2;
+CharsetRevol:    con 3;
+CharsetResur:    con 4;
 
 #
 # Control panel geometry.
+#
+# The panel is drawn by icurses over the matrix canvas. Matrix cells under
+# this rectangle are still stored in the canvas, but not emitted directly.
 #
 PanelX: con 2;
 PanelY: con 2;
@@ -54,20 +97,28 @@ PanelW: con 58;
 PanelH: con 8;
 
 #
-# Number of independent stream objects.
-# Horizontal spacing is calculated in initmatrix() as cw / MaxStreams.
+# Number of independent falling streams.
+#
+# Each stream has its own timer process and column. This demonstrates how
+# a real icurses application can combine UI widgets with asynchronous work.
 #
 MaxStreams: con 20;
 
 #
-# Current active character set and pseudo-random generator state.
+# Active charset string and deterministic pseudo-random generator state.
 #
 chars: string;
 seed: int;
 
 #
 # Global animation/UI state.
-# speedcoef affects per-stream delay and occasional extra row steps.
+#
+# paused       - non-zero pauses stream movement.
+# speedcoef    - global speed multiplier, clamped to [1..8].
+# charsetmode  - current charset mode.
+# running      - shared flag used by background processes.
+# lastkey      - last keyboard code seen by the main loop.
+# panelvisible - mirrors visibility of the control panel for coverage checks.
 #
 paused: int;
 speedcoef: int;
@@ -77,28 +128,37 @@ lastkey: int;
 panelvisible: int;
 
 #
-# Terminal capability information read through Icurses->consinfo().
+# Terminal capabilities read from /dev/consinfo.
+#
+# terminalutf8 controls the default charset and charset cycling order.
+# Note: an SSH session from Windows may still report the server-side terminal
+# capabilities rather than the original client console. We intentionally trust
+# /dev/consinfo here and keep the policy simple.
 #
 colors: int;
 truecolor: int;
+terminalutf8: int;
 conssource: string;
 
 #
-# Event channels:
-# keyc receives keyboard input; streamc receives stream wake-up events.
+# Event channels.
+#
+# keyc receives keyboard events from keyproc().
+# streamc receives stream IDs from streamproc(i).
 #
 keyc: chan of int;
 streamc: chan of int;
 
 #
 # Per-stream state arrays.
-# sx: stream column.
-# shead: current head row.
-# soldhead: previous head row.
-# stail: immutable stream length until restart.
-# sbasedelay: base wake-up delay in milliseconds.
-# sdrift: slowly changing delay offset.
-# sphase: reserved random phase value for future use.
+#
+# sx         - stream column.
+# shead      - current stream head row.
+# soldhead   - previous head row.
+# stail      - immutable stream length until restart.
+# sbasedelay - base stream wake-up delay in milliseconds.
+# sdrift     - slowly changing delay offset.
+# sphase     - reserved random phase value for future visual effects.
 #
 sx: array of int;
 shead: array of int;
@@ -109,21 +169,26 @@ sdrift: array of int;
 sphase: array of int;
 
 #
-# Build the icurses widget tree.
+# UI tree construction.
 #
 build: fn(u: ref IcUi->Ui);
 
 #
-# Read terminal geometry and capabilities through Icurses->consinfo().
+# Terminal detection.
 #
 readconsoleparams: fn();
 
 #
-# Character set and status helpers.
+# Charset helpers.
 #
+defaultcharset: fn(): int;
 setcharset: fn();
 nextcharset: fn();
 charsetname: fn(): string;
+
+#
+# Status and controls.
+#
 statusline: fn(): string;
 setspeed: fn(u: ref IcUi->Ui, speed: int);
 
@@ -134,20 +199,20 @@ rand: fn(n: int): int;
 rndchar: fn(): string;
 
 #
-# Matrix stream initialization and reset helpers.
+# Matrix stream lifecycle.
 #
 initmatrix: fn();
 resetmatrix: fn(u: ref IcUi->Ui);
 resetstream: fn(i: int);
 
 #
-# Stream geometry helpers.
+# Stream geometry.
 #
 streamtop: fn(head, tail: int): int;
 streambottom: fn(head: int): int;
 
 #
-# Stream update and rendering helpers.
+# Stream update/render.
 #
 updatestream: fn(u: ref IcUi->Ui, i: int);
 drawstream: fn(u: ref IcUi->Ui, i: int, oldhead, newhead: int);
@@ -162,14 +227,14 @@ putcell: fn(u: ref IcUi->Ui, x, y: int, ch, code: string);
 covered: fn(x, y: int): int;
 
 #
-# Full redraw helpers used when UI/panel/status may overwrite the matrix.
+# Full redraw helpers.
 #
 invalidateui: fn(u: ref IcUi->Ui);
 fulldraw: fn(u: ref IcUi->Ui);
 resyncmatrix: fn(u: ref IcUi->Ui);
 
 #
-# Input and application command handling.
+# Input and command handling.
 #
 handleanimkey: fn(u: ref IcUi->Ui, k: int): int;
 appmsg: fn(u: ref IcUi->Ui, m: IcMsg->Msg);
@@ -183,8 +248,12 @@ streamdelay: fn(i: int): int;
 
 #
 # Read terminal geometry and capabilities through Icurses->consinfo().
-# Updates global cw/ch/status rows/colors/truecolor/conssource.
-# Falls back to DefaultW x DefaultH when the backend reports invalid values.
+#
+# This function centralizes all terminal-dependent policy:
+# - geometry fallback;
+# - color/truecolor detection;
+# - UTF-8 detection;
+# - source string used in the status line.
 #
 readconsoleparams()
 {
@@ -197,6 +266,7 @@ readconsoleparams()
 
 	colors = 16;
 	truecolor = 0;
+	terminalutf8 = 0;
 	conssource = "default";
 
 	ci = ic->consinfo();
@@ -211,6 +281,7 @@ readconsoleparams()
 
 	colors = ci.colors;
 	truecolor = ci.truecolor;
+	terminalutf8 = ci.utf8;
 	conssource = ci.source;
 
 	statusy0 = ch - 2;
@@ -218,50 +289,143 @@ readconsoleparams()
 }
 
 #
-# Select active glyph set according to charsetmode.
-# Updates global chars.
+# Return the default charset for the detected terminal.
+#
+# UTF-8 terminals start with the native Matrix glyph order.
+# Non-UTF-8 terminals start with ASCII for maximum safety.
+#
+defaultcharset(): int
+{
+	if(terminalutf8)
+		return CharsetRevol;
+
+	return CharsetAscii;
+}
+
+#
+# Select the active glyph string from charsetmode.
+#
+# Invalid modes are normalized through defaultcharset(), so callers can rely
+# on chars being usable after this function returns.
 #
 setcharset()
 {
-	if(charsetmode == CharsetCjk)
-		chars = CjkChars;
-	else if(charsetmode == CharsetCyrillic)
-		chars = CyrillicChars;
-	else
+	case charsetmode {
+	CharsetAscii =>
 		chars = AsciiChars;
+
+	CharsetCyrillic =>
+		chars = CyrillicChars;
+
+	CharsetCjk =>
+		chars = CjkChars;
+
+	CharsetRevol =>
+		chars = RevolChars;
+
+	CharsetResur =>
+		chars = ResurChars;
+
+	* =>
+		charsetmode = defaultcharset();
+		setcharset();
+		return;
+	}
 
 	if(chars == "")
 		chars = AsciiChars;
 }
 
 #
-# Cycle active charset mode:
-# ASCII -> Cyrillic -> CJK -> ASCII.
+# Advance to the next charset.
+#
+# The order is intentionally terminal-dependent:
+#
+# UTF-8:
+#   Revol -> Resur -> CJK -> ASCII -> Cyrillic -> Revol
+#
+# non-UTF-8:
+#   ASCII -> Cyrillic -> Revol -> Resur -> CJK -> ASCII
 #
 nextcharset()
 {
-	charsetmode++;
-	if(charsetmode > CharsetCjk)
-		charsetmode = CharsetAscii;
+	if(terminalutf8){
+		case charsetmode {
+		CharsetRevol =>
+			charsetmode = CharsetResur;
+
+		CharsetResur =>
+			charsetmode = CharsetCjk;
+
+		CharsetCjk =>
+			charsetmode = CharsetAscii;
+
+		CharsetAscii =>
+			charsetmode = CharsetCyrillic;
+
+		CharsetCyrillic =>
+			charsetmode = CharsetRevol;
+
+		* =>
+			charsetmode = CharsetRevol;
+		}
+	}
+	else{
+		case charsetmode {
+		CharsetAscii =>
+			charsetmode = CharsetCyrillic;
+
+		CharsetCyrillic =>
+			charsetmode = CharsetRevol;
+
+		CharsetRevol =>
+			charsetmode = CharsetResur;
+
+		CharsetResur =>
+			charsetmode = CharsetCjk;
+
+		CharsetCjk =>
+			charsetmode = CharsetAscii;
+
+		* =>
+			charsetmode = CharsetAscii;
+		}
+	}
 
 	setcharset();
 }
 
 #
-# Return human-readable name of current charset mode.
+# Human-readable current charset name for status/debug output.
 #
 charsetname(): string
 {
-	if(charsetmode == CharsetCjk)
-		return "cjk";
-	if(charsetmode == CharsetCyrillic)
+	case charsetmode {
+	CharsetAscii =>
+		return "ascii";
+
+	CharsetCyrillic =>
 		return "cyrillic";
-	return "ascii";
+
+	CharsetCjk =>
+		return "cjk";
+
+	CharsetRevol =>
+		return "matrix-revol";
+
+	CharsetResur =>
+		return "matrix-resur";
+
+	* =>
+		return "unknown";
+	}
 }
 
 #
-# Build status text shown in the bottom status area.
-# Includes runtime terminal capabilities and animation state.
+# Build the bottom status line.
+#
+# Real applications usually centralize status text construction like this,
+# because many actions can update the same status area.
 #
 statusline(): string
 {
@@ -277,6 +441,7 @@ statusline(): string
 		" | speed=" + string speedcoef +
 		" | streams=" + string MaxStreams +
 		" | charset=" + charsetname() +
+		" | utf8=" + string terminalutf8 +
 		" | truecolor=" + string truecolor +
 		" | colors=" + string colors +
 		" | size=" + string cw + "x" + string ch +
@@ -284,10 +449,7 @@ statusline(): string
 }
 
 #
-# Clamp and apply global speed coefficient.
-# Parameters:
-#   u     - UI instance.
-#   speed - requested speed coefficient.
+# Clamp and apply the global speed coefficient.
 #
 setspeed(u: ref IcUi->Ui, speed: int)
 {
@@ -301,10 +463,10 @@ setspeed(u: ref IcUi->Ui, speed: int)
 }
 
 #
-# Simple deterministic pseudo-random generator.
-# Parameters:
-#   n - exclusive upper bound.
-# Returns: value in range [0, n).
+# Small deterministic pseudo-random generator.
+#
+# This is not cryptographic randomness. It is deliberately simple and stable
+# so the demo remains deterministic enough for testing.
 #
 rand(n: int): int
 {
@@ -314,14 +476,18 @@ rand(n: int): int
 		return 0;
 
 	seed = seed + 7919 + (seed % 97) * 131;
+
 	if(seed < 0)
 		seed = -seed;
+
 	if(seed > 1000000000)
 		seed = seed % 1000000000;
 
 	r = seed % n;
+
 	if(r < 0)
 		r = -r;
+
 	if(r >= n)
 		r = n - 1;
 
@@ -329,8 +495,7 @@ rand(n: int): int
 }
 
 #
-# Pick one random glyph from the active charset.
-# Returns: one-character string or a space on failure.
+# Pick one random glyph from the current character set.
 #
 rndchar(): string
 {
@@ -341,6 +506,7 @@ rndchar(): string
 		return " ";
 
 	i = rand(n);
+
 	if(i < 0)
 		i = 0;
 	if(i >= n)
@@ -350,56 +516,70 @@ rndchar(): string
 }
 
 #
-# Map logical brightness value to terminal SGR code.
-# Parameters:
-#   v - brightness level, where 6 is stream head and lower values are tail.
-# Returns: SGR code string.
+# Map logical brightness to an SGR code.
+#
+# In truecolor mode we use explicit RGB greens.
+# Otherwise we fall back to common 16-color SGR sequences.
 #
 fadecode(v: int): string
 {
-	#
-	# Truecolor palette: no yellow, only white/green shades.
-	#
 	if(truecolor){
-		if(v >= 6)
+		case v {
+		6 =>
 			return "38;2;220;255;220;40";
-		if(v == 5)
+
+		5 =>
 			return "38;2;100;255;140;40";
-		if(v == 4)
+
+		4 =>
 			return "38;2;0;230;80;40";
-		if(v == 3)
+
+		3 =>
 			return "38;2;0;155;50;40";
-		if(v == 2)
+
+		2 =>
 			return "38;2;0;85;28;40";
-		if(v == 1)
+
+		1 =>
 			return "38;2;0;30;10;40";
-		return "0;30;40";
+
+		* =>
+			if(v > 6)
+				return "38;2;220;255;220;40";
+			return "0;30;40";
+		}
 	}
 
-	#
-	# 16-color fallback palette.
-	#
-	if(v >= 6)
+	case v {
+	6 =>
 		return "1;37;40";
-	if(v == 5)
+
+	5 =>
 		return "1;32;40";
-	if(v == 4)
+
+	4 =>
 		return "1;32;40";
-	if(v == 3)
+
+	3 =>
 		return "0;32;40";
-	if(v == 2)
+
+	2 =>
 		return "0;32;40";
-	if(v == 1)
+
+	1 =>
 		return "0;30;40";
-	return "0;30;40";
+
+	* =>
+		if(v > 6)
+			return "1;37;40";
+		return "0;30;40";
+	}
 }
 
 #
-# Convert position inside a stream tail to brightness value.
-# Parameters:
-#   pos  - distance from stream head.
-#   tail - stream length.
-# Returns: brightness level for fadecode().
+# Convert a cell position inside a stream to brightness.
+#
+# pos=0 is the head. Larger values are farther into the tail.
 #
 streamvalue(pos, tail: int): int
 {
@@ -419,7 +599,7 @@ streamvalue(pos, tail: int): int
 }
 
 #
-# Return first row occupied by stream with given head and tail length.
+# First occupied row for a stream.
 #
 streamtop(head, tail: int): int
 {
@@ -427,7 +607,7 @@ streamtop(head, tail: int): int
 }
 
 #
-# Return last row occupied by stream with given head position.
+# Last occupied row for a stream.
 #
 streambottom(head: int): int
 {
@@ -435,8 +615,7 @@ streambottom(head: int): int
 }
 
 #
-# Allocate and initialize all stream arrays.
-# Stream columns are distributed across current terminal width.
+# Allocate and initialize all stream state arrays.
 #
 initmatrix()
 {
@@ -472,9 +651,7 @@ initmatrix()
 }
 
 #
-# Reset one stream while keeping its column.
-# Parameters:
-#   i - stream index.
+# Reset one stream while keeping its assigned column.
 #
 resetstream(i: int)
 {
@@ -484,27 +661,14 @@ resetstream(i: int)
 	shead[i] = -rand(ch);
 	soldhead[i] = shead[i];
 
-	#
-	# Random immutable length until stream restart.
-	#
 	stail[i] = 6 + rand(18);
-
-	#
-	# Sparse mode delays: this is the visually good version.
-	#
 	sbasedelay[i] = 45 + rand(160);
-
-	#
-	# Drift slowly changes while the stream falls.
-	#
 	sdrift[i] = rand(41) - 20;
 	sphase[i] = rand(1000);
 }
 
 #
-# Reset full matrix state and clear the framework canvas.
-# Parameters:
-#   u - UI instance.
+# Reset all streams and clear the backing canvas.
 #
 resetmatrix(u: ref IcUi->Ui)
 {
@@ -514,11 +678,10 @@ resetmatrix(u: ref IcUi->Ui)
 }
 
 #
-# Test whether matrix cell is covered by panel/status UI.
-# Covered cells are kept in canvas state but not directly emitted.
-# Parameters:
-#   x, y - cell coordinates.
-# Returns: non-zero if the cell is covered.
+# Return non-zero if a cell is currently covered by UI chrome.
+#
+# Covered matrix cells are still stored in the canvas, but direct terminal
+# writes are suppressed so the panel/status area remains readable.
 #
 covered(x, y: int): int
 {
@@ -534,12 +697,10 @@ covered(x, y: int): int
 }
 
 #
-# Update one matrix cell in both framework canvas and terminal.
-# Parameters:
-#   u    - UI instance.
-#   x,y  - cell coordinates.
-#   chs  - glyph to draw.
-#   code - SGR style code.
+# Update one cell in the canvas and optionally emit it directly.
+#
+# This demo uses direct terminal output for animation speed, but keeps the
+# icurses canvas synchronized so full redraws still work correctly.
 #
 putcell(u: ref IcUi->Ui, x, y: int, chs, code: string)
 {
@@ -563,11 +724,7 @@ putcell(u: ref IcUi->Ui, x, y: int, chs, code: string)
 }
 
 #
-# Clear visible cells previously occupied by one stream.
-# Parameters:
-#   u       - UI instance.
-#   i       - stream index.
-#   oldhead - previous head position.
+# Clear cells previously occupied by one stream.
 #
 clearstream(u: ref IcUi->Ui, i: int, oldhead: int)
 {
@@ -593,13 +750,10 @@ clearstream(u: ref IcUi->Ui, i: int, oldhead: int)
 }
 
 #
-# Redraw one stream in its old/new vertical range.
-# Other streams are not touched.
-# Parameters:
-#   u       - UI instance.
-#   i       - stream index.
-#   oldhead - previous head row.
-#   newhead - new head row.
+# Redraw a stream in the union of its old and new vertical ranges.
+#
+# Only cells touched by this stream are changed. Other streams are not
+# recomputed, which keeps the animation lightweight.
 #
 drawstream(u: ref IcUi->Ui, i: int, oldhead, newhead: int)
 {
@@ -649,10 +803,7 @@ drawstream(u: ref IcUi->Ui, i: int, oldhead, newhead: int)
 }
 
 #
-# Advance one stream by one or more rows depending on speed coefficient.
-# Parameters:
-#   u - UI instance.
-#   i - stream index.
+# Advance one stream and repaint the changed area.
 #
 updatestream(u: ref IcUi->Ui, i: int)
 {
@@ -666,11 +817,8 @@ updatestream(u: ref IcUi->Ui, i: int)
 
 	old = shead[i];
 
-	#
-	# Small drift; speedcoef changes probability of extra row steps,
-	# but keeps jumps small enough to avoid empty-screen artifacts.
-	#
 	sdrift[i] += rand(7) - 3;
+
 	if(sdrift[i] < -50)
 		sdrift[i] = -50;
 	if(sdrift[i] > 50)
@@ -698,10 +846,7 @@ updatestream(u: ref IcUi->Ui, i: int)
 }
 
 #
-# Compute current wake-up delay for one stream.
-# Parameters:
-#   i - stream index.
-# Returns: delay in milliseconds.
+# Compute the next wake-up delay for one stream process.
 #
 streamdelay(i: int): int
 {
@@ -726,8 +871,7 @@ streamdelay(i: int): int
 }
 
 #
-# Re-emit all streams from current stream state.
-# Used after full UI redraws that may overwrite terminal cells.
+# Re-emit all streams after UI has redrawn over the terminal.
 #
 resyncmatrix(u: ref IcUi->Ui)
 {
@@ -740,9 +884,10 @@ resyncmatrix(u: ref IcUi->Ui)
 }
 
 #
-# Invalidate icurses renderer front buffer to force a full redraw.
-# Parameters:
-#   u - UI instance.
+# Force icurses renderer to treat every cell as dirty.
+#
+# This is useful when the demo has done direct terminal writes outside the
+# normal renderer path.
 #
 invalidateui(u: ref IcUi->Ui)
 {
@@ -762,9 +907,7 @@ invalidateui(u: ref IcUi->Ui)
 }
 
 #
-# Force full UI redraw and then restore matrix cells over uncovered areas.
-# Parameters:
-#   u - UI instance.
+# Full UI redraw followed by matrix resync.
 #
 fulldraw(u: ref IcUi->Ui)
 {
@@ -774,9 +917,14 @@ fulldraw(u: ref IcUi->Ui)
 }
 
 #
-# Build widgets, canvas, panel, buttons and key bindings.
-# Parameters:
-#   u - UI instance.
+# Build the widget tree.
+#
+# This demonstrates typical icurses application setup:
+# - configure frame/status rows;
+# - create a canvas;
+# - create a control panel;
+# - bind keys to commands;
+# - set focus and initial status.
 #
 build(u: ref IcUi->Ui)
 {
@@ -793,7 +941,7 @@ build(u: ref IcUi->Ui)
 	ui->window(u, root, "win.panel", PanelX, PanelY, PanelW, PanelH, "Animation control (press `h` to hide)");
 	ui->setframe(u, "win.panel", IcPaint->FrameDouble);
 	ui->setcontent(u, "win.panel",
-		"Sparse async stream model. Console params are read through Icurses->consinfo(). c cycles ASCII/Cyrillic/CJK. t toggles truecolor.");
+		"Sparse async stream model. c cycles charset order based on utf8 from /dev/consinfo. t toggles truecolor.");
 	ui->setscroll(u, "win.panel", IcView->ScrollClip, 0);
 
 	ui->button(u, "win.panel", "btn.pause", 2, 5, 11, 1, "Pause", "", "app", "app.pause");
@@ -819,65 +967,84 @@ build(u: ref IcUi->Ui)
 }
 
 #
-# Handle animation-specific raw keys before generic UI handling.
-# Parameters:
-#   u - UI instance.
-#   k - key code.
-# Returns: non-zero if the key was handled.
+# Handle demo-specific keys before passing input to generic UI navigation.
 #
 handleanimkey(u: ref IcUi->Ui, k: int): int
 {
 	lastkey = k;
 
-	if(k == ' '){
+	case k {
+	' ' =>
 		paused = !paused;
 		ui->setstatus(u, statusline());
 		fulldraw(u);
 		return 1;
-	}
 
-	if(k == '+' || k == '='){
+	'+' =>
 		setspeed(u, speedcoef + 1);
 		fulldraw(u);
 		return 1;
-	}
 
-	if(k == '-' || k == '_'){
+	'=' =>
+		setspeed(u, speedcoef + 1);
+		fulldraw(u);
+		return 1;
+
+	'-' =>
 		setspeed(u, speedcoef - 1);
 		fulldraw(u);
 		return 1;
-	}
 
-	if(k == 'c' || k == 'C'){
+	'_' =>
+		setspeed(u, speedcoef - 1);
+		fulldraw(u);
+		return 1;
+
+	'c' =>
 		nextcharset();
 		ui->setstatus(u, "charset switch | " + statusline());
 		fulldraw(u);
 		return 1;
-	}
 
-	if(k == 't' || k == 'T'){
+	'C' =>
+		nextcharset();
+		ui->setstatus(u, "charset switch | " + statusline());
+		fulldraw(u);
+		return 1;
+
+	't' =>
 		truecolor = !truecolor;
 		ui->setstatus(u, "truecolor toggle | " + statusline());
 		fulldraw(u);
 		return 1;
-	}
 
-	if(k == 'h' || k == 'H'){
+	'T' =>
+		truecolor = !truecolor;
+		ui->setstatus(u, "truecolor toggle | " + statusline());
+		fulldraw(u);
+		return 1;
+
+	'h' =>
 		ui->dispatch(u, msg->newmsg("anim", "win.panel", IcMsg->KindCommand, "node.toggle"));
 		panelvisible = !panelvisible;
 		ui->setstatus(u, statusline());
 		fulldraw(u);
 		return 1;
-	}
 
-	return 0;
+	'H' =>
+		ui->dispatch(u, msg->newmsg("anim", "win.panel", IcMsg->KindCommand, "node.toggle"));
+		panelvisible = !panelvisible;
+		ui->setstatus(u, statusline());
+		fulldraw(u);
+		return 1;
+
+	* =>
+		return 0;
+	}
 }
 
 #
-# Handle icurses command messages from buttons and bound actions.
-# Parameters:
-#   u - UI instance.
-#   m - message returned by the UI dispatcher.
+# Handle command messages produced by UI buttons/key bindings.
 #
 appmsg(u: ref IcUi->Ui, m: IcMsg->Msg)
 {
@@ -887,43 +1054,44 @@ appmsg(u: ref IcUi->Ui, m: IcMsg->Msg)
 	if(m.kind != IcMsg->KindCommand)
 		return;
 
-	if(m.cmd == "app.pause"){
+	case m.cmd {
+	"app.pause" =>
 		paused = !paused;
 		ui->setstatus(u, statusline());
 		fulldraw(u);
 		return;
-	}
 
-	if(m.cmd == "app.fast"){
+	"app.fast" =>
 		setspeed(u, speedcoef + 1);
 		fulldraw(u);
 		return;
-	}
 
-	if(m.cmd == "app.slow"){
+	"app.slow" =>
 		setspeed(u, speedcoef - 1);
 		fulldraw(u);
 		return;
-	}
 
-	if(m.cmd == "app.charset"){
+	"app.charset" =>
 		nextcharset();
 		ui->setstatus(u, "charset switch | " + statusline());
 		fulldraw(u);
 		return;
-	}
 
-	if(m.cmd == "app.truecolor"){
+	"app.truecolor" =>
 		truecolor = !truecolor;
 		ui->setstatus(u, "truecolor toggle | " + statusline());
 		fulldraw(u);
+		return;
+
+	* =>
 		return;
 	}
 }
 
 #
 # Keyboard reader process.
-# Sends key codes into keyc until input closes or the app stops.
+#
+# The process exits when running is cleared or input closes.
 #
 keyproc()
 {
@@ -946,10 +1114,10 @@ keyproc()
 }
 
 #
-# Independent stream timer process.
-# Each stream sleeps for its own delay and then sends its index to streamc.
-# Parameters:
-#   i - stream index.
+# Independent per-stream timer process.
+#
+# Instead of a single global animation loop, each stream sleeps according to
+# its own speed and then posts its stream index to streamc.
 #
 streamproc(i: int)
 {
@@ -967,9 +1135,18 @@ streamproc(i: int)
 }
 
 #
-# Application entry point.
-# Loads modules, reads console parameters, builds UI, starts stream processes,
-# and runs the main event loop.
+# Program entry point.
+#
+# The overall application lifecycle is:
+#
+# 1. Load modules.
+# 2. Read terminal capabilities.
+# 3. Initialize model state.
+# 4. Build the icurses UI tree.
+# 5. Open keyboard input.
+# 6. Spawn background processes.
+# 7. Run the main event loop.
+# 8. Close input/UI cleanly.
 #
 init(nil: ref Draw->Context, nil: list of string)
 {
@@ -1003,7 +1180,7 @@ init(nil: ref Draw->Context, nil: list of string)
 
 	paused = 0;
 	speedcoef = 1;
-	charsetmode = CharsetAscii;
+	charsetmode = defaultcharset();
 	running = 0;
 	lastkey = 0;
 	panelvisible = 1;
