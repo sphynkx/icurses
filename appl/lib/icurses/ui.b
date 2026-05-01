@@ -2,6 +2,15 @@ implement IcUi;
 
 include "icurses/ui.m";
 
+MousePath: con "/dev/emouse";
+
+MKindNone:   con 0;
+MKindMove:   con 1;
+MKindDown:   con 2;
+MKindUp:     con 3;
+MKindDrag:   con 4;
+MKindButton: con 5;
+
 sys: Sys;
 view: IcView;
 paint: IcPaint;
@@ -9,17 +18,66 @@ msg: IcMsg;
 keymap: IcKeymap;
 ic: Icurses;
 
+keyc: chan of int;
+tickc: chan of int;
+mousec: chan of string;
+
+keypid: int;
+mousepid: int;
+tickpid: int;
+
+keypidc: chan of int;
+mousepidc: chan of int;
+tickpidc: chan of int;
+
+keydonec: chan of int;
+mousedonec: chan of int;
+tickdonec: chan of int;
+
+inputrunning: int;
+inputopened: int;
+mouseenabled: int;
+mouseopened: int;
+activetickms: int;
+
+mousefd: ref Sys->FD;
+mousebuf: array of byte;
+
+lastmouseok: int;
+lastx: int;
+lasty: int;
+lastbuttons: int;
+lastmods: int;
+
 pressnode: fn(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg;
 
 hotkeymatch: fn(k: int, hotkey: string): int;
 findhotkeynode: fn(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node;
 findhotkey: fn(u: ref IcUi->Ui, k: int): ref IcView->Node;
 newstep: fn(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step;
+
+parseintat: fn(s: string, i: int): (int, int, int);
+encodemouse: fn(kind, x, y, buttons, oldbuttons, mods, dx, dy: int): string;
+nonemouse: fn(): string;
+resetmouse: fn();
+openmouse: fn(): int;
+closemouse: fn();
+classifymouse: fn(x, y, buttons, mods: int): string;
+parsemouse: fn(s: string): string;
+readmouse: fn(): string;
+
 focusok: fn(u: ref IcUi->Ui, n: ref IcView->Node): int;
 actionok: fn(u: ref IcUi->Ui, n: ref IcView->Node): int;
 ensurefocus: fn(u: ref IcUi->Ui): ref IcView->Node;
-keyproc: fn(u: ref IcUi->Ui);
-tickproc: fn(u: ref IcUi->Ui);
+
+killpid: fn(pid: int);
+wakeinputreaders: fn();
+timeoutproc: fn(c: chan of int, ms: int);
+waitdone: fn(c: chan of int, ms: int): int;
+
+keyproc: fn();
+mouseproc: fn();
+tickproc: fn();
 
 clamp: fn(v, lo, hi: int): int;
 percenttext: fn(value, total: int): string;
@@ -55,6 +113,32 @@ init()
 	paint->init();
 	msg->init();
 	keymap->init();
+
+	keyc = chan[16] of int;
+	tickc = chan[4] of int;
+	mousec = chan[64] of string;
+
+	keypid = 0;
+	mousepid = 0;
+	tickpid = 0;
+
+	keypidc = chan of int;
+	mousepidc = chan of int;
+	tickpidc = chan of int;
+
+	keydonec = chan[1] of int;
+	mousedonec = chan[1] of int;
+	tickdonec = chan[1] of int;
+
+	inputrunning = 0;
+	inputopened = 0;
+	mouseenabled = 0;
+	mouseopened = 0;
+	activetickms = 100;
+
+	mousefd = nil;
+	mousebuf = array[128] of byte;
+	resetmouse();
 }
 
 clamp(v, lo, hi: int): int
@@ -81,6 +165,237 @@ percenttext(value, total: int): string
 	return sys->sprint("%d%%", p);
 }
 
+killpid(pid: int)
+{
+	fd: ref Sys->FD;
+
+	if(pid <= 0)
+		return;
+
+	fd = sys->open("/prog/" + sys->sprint("%d", pid) + "/ctl", Sys->OWRITE);
+	if(fd != nil)
+		sys->fprint(fd, "kill");
+}
+
+wakeinputreaders()
+{
+	fd: ref Sys->FD;
+
+	fd = sys->open(Icurses->ConsctlPath, Sys->OWRITE);
+	if(fd != nil)
+		sys->fprint(fd, "rawoff");
+}
+
+timeoutproc(c: chan of int, ms: int)
+{
+	if(ms > 0)
+		sys->sleep(ms);
+
+	c <-= 1;
+}
+
+waitdone(c: chan of int, ms: int): int
+{
+	tc: chan of int;
+	v: int;
+
+	if(c == nil)
+		return 0;
+
+	tc = chan[1] of int;
+	spawn timeoutproc(tc, ms);
+
+	alt {
+	v = <-c =>
+		return 1;
+
+	v = <-tc =>
+		return 0;
+	}
+
+	return 0;
+}
+
+parseintat(s: string, i: int): (int, int, int)
+{
+	sign, v, c, ok: int;
+
+	while(i < len s && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r'))
+		i++;
+
+	sign = 1;
+
+	if(i < len s && s[i] == '-'){
+		sign = -1;
+		i++;
+	}
+
+	v = 0;
+	ok = 0;
+
+	while(i < len s){
+		c = int s[i];
+
+		if(c < '0' || c > '9')
+			break;
+
+		v = v * 10 + c - '0';
+		ok = 1;
+		i++;
+	}
+
+	if(!ok)
+		return (0, i, 0);
+
+	return (sign * v, i, 1);
+}
+
+encodemouse(kind, x, y, buttons, oldbuttons, mods, dx, dy: int): string
+{
+	return sys->sprint("%d %d %d %d %d %d %d %d",
+		kind,
+		x,
+		y,
+		buttons,
+		oldbuttons,
+		mods,
+		dx,
+		dy);
+}
+
+nonemouse(): string
+{
+	return encodemouse(MKindNone, 0, 0, 0, 0, 0, 0, 0);
+}
+
+resetmouse()
+{
+	lastmouseok = 0;
+	lastx = 0;
+	lasty = 0;
+	lastbuttons = 0;
+	lastmods = 0;
+}
+
+openmouse(): int
+{
+	if(mousefd != nil)
+		return 0;
+
+	mousefd = sys->open(MousePath, Sys->OREAD);
+	if(mousefd == nil)
+		return -1;
+
+	resetmouse();
+	return 0;
+}
+
+closemouse()
+{
+	mousefd = nil;
+	resetmouse();
+}
+
+classifymouse(x, y, buttons, mods: int): string
+{
+	kind, oldbuttons, dx, dy: int;
+
+	if(!lastmouseok){
+		oldbuttons = 0;
+		dx = 0;
+		dy = 0;
+
+		if(buttons != 0)
+			kind = MKindDown;
+		else
+			kind = MKindMove;
+
+		lastx = x;
+		lasty = y;
+		lastbuttons = buttons;
+		lastmods = mods;
+		lastmouseok = 1;
+
+		return encodemouse(kind, x, y, buttons, oldbuttons, mods, dx, dy);
+	}
+
+	oldbuttons = lastbuttons;
+	dx = x - lastx;
+	dy = y - lasty;
+
+	if(buttons != oldbuttons){
+		if(oldbuttons == 0 && buttons != 0)
+			kind = MKindDown;
+		else if(oldbuttons != 0 && buttons == 0)
+			kind = MKindUp;
+		else
+			kind = MKindButton;
+	}
+	else if(buttons != 0 && (dx != 0 || dy != 0))
+		kind = MKindDrag;
+	else if(dx != 0 || dy != 0)
+		kind = MKindMove;
+	else
+		kind = MKindMove;
+
+	lastx = x;
+	lasty = y;
+	lastbuttons = buttons;
+	lastmods = mods;
+	lastmouseok = 1;
+
+	return encodemouse(kind, x, y, buttons, oldbuttons, mods, dx, dy);
+}
+
+parsemouse(s: string): string
+{
+	i, ok: int;
+	x, y, buttons, mods: int;
+
+	if(s == "" || len s < 2)
+		return nonemouse();
+
+	if(s[0] != 'm')
+		return nonemouse();
+
+	i = 1;
+
+	(x, i, ok) = parseintat(s, i);
+	if(!ok)
+		return nonemouse();
+
+	(y, i, ok) = parseintat(s, i);
+	if(!ok)
+		return nonemouse();
+
+	(buttons, i, ok) = parseintat(s, i);
+	if(!ok)
+		return nonemouse();
+
+	(mods, i, ok) = parseintat(s, i);
+	if(!ok)
+		mods = 0;
+
+	return classifymouse(x, y, buttons, mods);
+}
+
+readmouse(): string
+{
+	n: int;
+	s: string;
+
+	if(mousefd == nil)
+		return nonemouse();
+
+	n = sys->read(mousefd, mousebuf, len mousebuf);
+	if(n <= 0)
+		return nonemouse();
+
+	s = string mousebuf[0:n];
+
+	return parsemouse(s);
+}
+
 new(out: ref Sys->FD, w, h: int): ref IcUi->Ui
 {
 	u: ref IcUi->Ui;
@@ -98,8 +413,8 @@ new(out: ref Sys->FD, w, h: int): ref IcUi->Ui
 	u.lastmsg = msg->none();
 	u.running = 0;
 
-	u.keyc = chan of int;
-	u.tickc = chan of int;
+	u.keyc = chan[16] of int;
+	u.tickc = chan[4] of int;
 	u.tickms = 100;
 	u.ticks = 0;
 
@@ -111,8 +426,8 @@ close(u: ref IcUi->Ui)
 	if(u == nil)
 		return;
 
+	stop(u);
 	paint->close(u.renderer);
-	u.running = 0;
 }
 
 settick(u: ref IcUi->Ui, ms: int)
@@ -126,6 +441,31 @@ settick(u: ref IcUi->Ui, ms: int)
 	u.tickms = ms;
 }
 
+enablemouse(u: ref IcUi->Ui, enabled: int): int
+{
+	if(u == nil)
+		return -1;
+
+	if(u.running)
+		return -1;
+
+	mouseenabled = enabled != 0;
+
+	return 0;
+}
+
+ismouseenabled(u: ref IcUi->Ui): int
+{
+	u = u;
+	return mouseenabled;
+}
+
+ismouseopen(u: ref IcUi->Ui): int
+{
+	u = u;
+	return mouseopened;
+}
+
 start(u: ref IcUi->Ui): int
 {
 	if(u == nil)
@@ -134,20 +474,123 @@ start(u: ref IcUi->Ui): int
 	if(u.running)
 		return 0;
 
-	u.running = 1;
+	keyc = chan[16] of int;
+	tickc = chan[4] of int;
+	mousec = chan[64] of string;
 
-	spawn keyproc(u);
-	spawn tickproc(u);
+	u.keyc = keyc;
+	u.tickc = tickc;
+
+	keypidc = chan of int;
+	mousepidc = chan of int;
+	tickpidc = chan of int;
+
+	keydonec = chan[1] of int;
+	mousedonec = chan[1] of int;
+	tickdonec = chan[1] of int;
+
+	keypid = 0;
+	mousepid = 0;
+	tickpid = 0;
+
+	inputopened = 0;
+	mouseopened = 0;
+	inputrunning = 0;
+
+	activetickms = u.tickms;
+	if(activetickms <= 0)
+		activetickms = 100;
+
+	if(ic->openkbd() < 0)
+		return -1;
+
+	inputopened = 1;
+
+	if(mouseenabled){
+		if(openmouse() < 0){
+			ic->closekbd();
+			inputopened = 0;
+			mouseopened = 0;
+			return -1;
+		}
+
+		mouseopened = 1;
+	}
+	else
+		mouseopened = 0;
+
+	u.running = 1;
+	inputrunning = 1;
+
+	spawn keyproc();
+	keypid = <-keypidc;
+
+	if(mouseopened){
+		spawn mouseproc();
+		mousepid = <-mousepidc;
+	}
+
+	spawn tickproc();
+	tickpid = <-tickpidc;
 
 	return 0;
 }
 
 stop(u: ref IcUi->Ui)
 {
+	keyok, mouseok, tickok: int;
+
 	if(u == nil)
 		return;
 
+	if(!u.running && !inputopened && !mouseopened && !inputrunning)
+		return;
+
 	u.running = 0;
+	inputrunning = 0;
+
+	wakeinputreaders();
+
+	keyok = 1;
+	mouseok = 1;
+	tickok = 1;
+
+	if(keypid > 0)
+		keyok = waitdone(keydonec, 700);
+
+	if(mousepid > 0)
+		mouseok = waitdone(mousedonec, 700);
+
+	if(tickpid > 0)
+		tickok = waitdone(tickdonec, activetickms + 200);
+
+	if(keypid > 0){
+		if(!keyok)
+			killpid(keypid);
+		keypid = 0;
+	}
+
+	if(mousepid > 0){
+		if(!mouseok)
+			killpid(mousepid);
+		mousepid = 0;
+	}
+
+	if(tickpid > 0){
+		if(!tickok)
+			killpid(tickpid);
+		tickpid = 0;
+	}
+
+	if(mouseopened){
+		closemouse();
+		mouseopened = 0;
+	}
+
+	if(inputopened){
+		ic->closekbd();
+		inputopened = 0;
+	}
 }
 
 newstep(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step
@@ -166,8 +609,9 @@ newstep(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step
 
 step(u: ref IcUi->Ui): IcUi->Step
 {
-	k, t: int;
+	k, t, mk, i, ok: int;
 	m: IcMsg->Msg;
+	raw: string;
 
 	if(u == nil)
 		return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), "nil ui");
@@ -176,16 +620,26 @@ step(u: ref IcUi->Ui): IcUi->Step
 		return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), u.status);
 
 	alt {
-	k = <-u.keyc =>
+	k = <-keyc =>
 		if(k < 0 || isquit(k)){
-			u.running = 0;
+			stop(u);
 			return newstep(IcUi->StepDone, 1, k, 0, msg->none(), "done");
 		}
 
 		m = handlekey(u, k);
 		return newstep(IcUi->StepKey, 0, k, 0, m, u.status);
 
-	t = <-u.tickc =>
+	raw = <-mousec =>
+		i = 0;
+		(mk, i, ok) = parseintat(raw, i);
+		if(!ok || mk == MKindNone){
+			stop(u);
+			return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), "mouse closed");
+		}
+
+		return newstep(IcUi->StepMouse, 0, -1, 0, msg->none(), raw);
+
+	t = <-tickc =>
 		u.ticks = t;
 		return newstep(IcUi->StepTick, 0, -1, t, msg->none(), u.status);
 	}
@@ -193,44 +647,79 @@ step(u: ref IcUi->Ui): IcUi->Step
 	return newstep(IcUi->StepDone, 1, -1, 0, msg->none(), u.status);
 }
 
-keyproc(u: ref IcUi->Ui)
+keyproc()
 {
 	k: int;
 
+	keypidc <-= sys->pctl(0, nil);
+
 	for(;;){
-		if(u == nil || !u.running)
-			return;
+		if(!inputrunning)
+			break;
 
-		k = readkey();
+		k = ic->readkey();
 
-		if(u == nil || !u.running)
-			return;
+		if(!inputrunning)
+			break;
 
-		u.keyc <-= k;
+		keyc <-= k;
 
 		if(k < 0)
-			return;
+			break;
 	}
+
+	if(keydonec != nil)
+		keydonec <-= 1;
 }
 
-tickproc(u: ref IcUi->Ui)
+mouseproc()
+{
+	raw: string;
+
+	mousepidc <-= sys->pctl(0, nil);
+
+	for(;;){
+		if(!inputrunning)
+			break;
+
+		raw = readmouse();
+
+		if(!inputrunning)
+			break;
+
+		mousec <-= raw;
+
+		if(raw == nonemouse())
+			break;
+	}
+
+	if(mousedonec != nil)
+		mousedonec <-= 1;
+}
+
+tickproc()
 {
 	t: int;
+
+	tickpidc <-= sys->pctl(0, nil);
 
 	t = 0;
 
 	for(;;){
-		if(u == nil || !u.running)
-			return;
+		if(!inputrunning)
+			break;
 
-		sys->sleep(u.tickms);
+		sys->sleep(activetickms);
 
-		if(u == nil || !u.running)
-			return;
+		if(!inputrunning)
+			break;
 
 		t++;
-		u.tickc <-= t;
+		tickc <-= t;
 	}
+
+	if(tickdonec != nil)
+		tickdonec <-= 1;
 }
 
 openinput(): int

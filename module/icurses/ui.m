@@ -5,9 +5,10 @@ IcUi: module
 {
 	PATH: con "/dis/lib/icurses/ui.dis";
 
-	StepDone: con 0;
-	StepKey:  con 1;
-	StepTick: con 2;
+	StepDone:  con 0;
+	StepKey:   con 1;
+	StepTick:  con 2;
+	StepMouse: con 3;
 
 	Ui: adt
 	{
@@ -49,6 +50,10 @@ IcUi: module
 	stop: fn(u: ref Ui);
 
 	settick: fn(u: ref Ui, ms: int);
+
+	enablemouse: fn(u: ref Ui, enabled: int): int;
+	ismouseenabled: fn(u: ref Ui): int;
+	ismouseopen: fn(u: ref Ui): int;
 
 	openinput: fn(): int;
 	closeinput: fn();
