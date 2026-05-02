@@ -15,29 +15,40 @@ Matrix: module
 # ui is the high-level icurses UI facade.
 # ic provides low-level terminal/keyboard helpers and /dev/consinfo parsing.
 # msg provides message constants and constructors used by UI dispatch.
+# view is used directly for a few geometry/focus operations in this example.
 #
 sys: Sys;
 ui: IcUi;
 ic: Icurses;
 msg: IcMsg;
+view: IcView;
 
 #
-# Terminal output FD. The demo writes directly to stdout for fast animation,
-# while still keeping the icurses canvas state synchronized.
+# Terminal output FD.
+#
+# The demo writes directly to stdout for fast animation, while still keeping
+# the icurses canvas state synchronized.
 #
 out: ref Sys->FD;
 
 #
-# Safe fallback terminal size. Used when /dev/consinfo is missing or reports
-# dimensions too small for the demo.
+# Safe fallback terminal size.
+#
+# Used when /dev/consinfo is missing, incomplete, or reports invalid
+# dimensions. Small but valid consoles are kept; they are clamped only to the
+# minimal dimensions needed to keep the demo alive.
 #
 DefaultW: con 80;
 DefaultH: con 24;
+MinW: con 20;
+MinH: con 8;
+MaxW: con 300;
+MaxH: con 120;
 
 #
 # Runtime terminal geometry.
 #
-# cw/ch are columns and rows.
+# cw/ch are columns and rows used by the renderer and backing canvas.
 # statusy0/statusy1 reserve the last two rows for icurses help/status lines.
 #
 cw: int;
@@ -46,18 +57,62 @@ statusy0: int;
 statusy1: int;
 
 #
-# ID of the icurses canvas node used as the backing store for the animation.
+# Resize polling.
 #
-CanvasId: con "canvas.matrix";
+# /dev/consinfo is relatively expensive, especially on hosted Windows.
+# The animation produces many stream events, so resize checks are throttled.
+#
+ResizeCheckMs: con 300;
+lastresizecheck: int;
+
+#
+# Canvas id.
+#
+# IcCanvas keeps a process-global registry keyed by id. When the Matrix UI is
+# rebuilt after resize, using the same canvas id can accidentally reuse an old
+# canvas from the registry. The active canvas id therefore includes a generation
+# number derived from resizes.
+#
+CanvasBase: con "canvas.matrix";
+canvasid: string;
+
+#
+# Alternate screen state.
+#
+# The demo owns the terminal while running. It enters the VT alternate screen,
+# hides the cursor, and restores the normal screen on exit. If the host ignores
+# alternate-screen mode, cleanup still clears the visible terminal before
+# returning to the shell.
+#
+appscreen: int;
+
+#
+# Default background SGR code.
+#
+BgCode: con "0;30;40";
+
+#
+# Mouse support.
+#
+# Raw console mouse mode can capture wheel/scroll in hosted terminals. The demo
+# enables mouse by default, but keeps the `m` toggle so users can release mouse
+# wheel handling back to the host console when needed.
+#
+# Wheel events move focus one widget at a time.
+#
+MousePath: con "/dev/emouse";
+MouseWheelUp: con 8;
+MouseWheelDown: con 16;
 
 #
 # Character sets used by streams.
 #
-# ASCII and Cyrillic are safe on most terminals.
-# CJK and Matrix glyph sets look best on UTF-8 terminals with suitable fonts.
-# Depending on terminal/font configuration, some glyphs may render double-width.
+# ASCII is safe on every terminal.
+# Cyrillic, CJK and Matrix glyph sets require a Unicode-capable terminal and
+# suitable fonts. Depending on terminal/font configuration, some glyphs may
+# render double-width or as replacement characters.
 #
-AsciiChars: con "0123456789+=&%$?#№ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+AsciiChars: con "0123456789+=&%$?#ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 CyrillicChars: con "1234567890+=&%$?#№АБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЭЮЯабвгдежзиклмнопрстуфхцчшэюя";
 CjkChars: con "日月火水木金土天地山川森林雨風雷電光闇龍鳥魚人心夢影空海石花竹門道星";
 
@@ -71,12 +126,12 @@ ResurChars: con "モエヤキオカ7ケサスz152ヨタワ4ネヌナ98ヒ0ホア
 #
 # Charset mode constants.
 #
-# The actual cycling order is terminal-dependent:
+# The actual cycling order is terminal-policy dependent:
 #
-#   UTF-8 terminals:
+#   Unicode-friendly terminals:
 #     Revol -> Resur -> CJK -> ASCII -> Cyrillic -> Revol
 #
-#   non-UTF-8 terminals:
+#   Conservative terminals:
 #     ASCII -> Cyrillic -> Revol -> Resur -> CJK -> ASCII
 #
 CharsetAscii:    con 0;
@@ -99,10 +154,28 @@ PanelH: con 8;
 #
 # Number of independent falling streams.
 #
-# Each stream has its own timer process and column. This demonstrates how
-# a real icurses application can combine UI widgets with asynchronous work.
+# Older versions of this demo used one process per stream. That was useful as
+# an async-process example, but it was too expensive on hosted Windows. Current
+# Matrix uses one animation process and schedules all streams in the main loop.
 #
 MaxStreams: con 20;
+
+#
+# Animation timing.
+#
+# animproc posts one lightweight tick to streamc every AnimTickMs. The main
+# loop then updates only streams whose per-stream deadline has expired.
+#
+AnimTickMs: con 25;
+
+#
+# Initial head depth.
+#
+# Initial stream heads are placed a few cells above the top edge. This avoids
+# both the artificial full-height startup flash and the visible synchronized
+# all-column first frame. The first processing pass still runs immediately.
+#
+StartDepthMax: con 7;
 
 #
 # Active charset string and deterministic pseudo-random generator state.
@@ -119,6 +192,8 @@ seed: int;
 # running      - shared flag used by background processes.
 # lastkey      - last keyboard code seen by the main loop.
 # panelvisible - mirrors visibility of the control panel for coverage checks.
+# resizes      - number of successful UI rebuilds after terminal resize.
+# mouseopen    - non-zero when the optional raw mouse reader is active.
 #
 paused: int;
 speedcoef: int;
@@ -126,28 +201,46 @@ charsetmode: int;
 running: int;
 lastkey: int;
 panelvisible: int;
+resizes: int;
+mouseopen: int;
 
 #
 # Terminal capabilities read from /dev/consinfo.
 #
-# terminalutf8 controls the default charset and charset cycling order.
-# Note: an SSH session from Windows may still report the server-side terminal
-# capabilities rather than the original client console. We intentionally trust
-# /dev/consinfo here and keep the policy simple.
+# terminalutf8 records the raw capability reported by the host.
+# glyphutf8 records the policy used by this demo to choose the default glyph
+# set and charset cycling order.
+#
+# Windows MinGW console can report utf8=1 while the actual console host/font
+# still displays some Matrix/CJK glyphs poorly. For source=mingw-console this
+# demo starts in ASCII mode by setting glyphutf8=0, while still allowing manual
+# charset cycling with the `c` key.
 #
 colors: int;
 truecolor: int;
 terminalutf8: int;
+glyphutf8: int;
 conssource: string;
 
 #
 # Event channels.
 #
 # keyc receives keyboard events from keyproc().
-# streamc receives stream IDs from streamproc(i).
+# streamc receives animation ticks from animproc().
+# mousec receives raw /dev/emouse records from mouseproc().
+#
+# Buffered channels reduce the chance that a background process remains blocked
+# while the main loop is shutting down.
 #
 keyc: chan of int;
 streamc: chan of int;
+mousec: chan of string;
+
+#
+# Optional raw mouse reader state.
+#
+mousefd: ref Sys->FD;
+mousebuf: array of byte;
 
 #
 # Per-stream state arrays.
@@ -159,6 +252,7 @@ streamc: chan of int;
 # sbasedelay - base stream wake-up delay in milliseconds.
 # sdrift     - slowly changing delay offset.
 # sphase     - reserved random phase value for future visual effects.
+# snext      - next scheduled update time in sys->millisec() units.
 #
 sx: array of int;
 shead: array of int;
@@ -167,11 +261,25 @@ stail: array of int;
 sbasedelay: array of int;
 sdrift: array of int;
 sphase: array of int;
+snext: array of int;
 
 #
-# UI tree construction.
+# UI tree construction and dynamic geometry.
 #
 build: fn(u: ref IcUi->Ui);
+panelw: fn(): int;
+panelh: fn(): int;
+makecanvasid: fn(): string;
+rebuildui: fn(u: ref IcUi->Ui, oldw, oldh: int): ref IcUi->Ui;
+checkresize: fn(u: ref IcUi->Ui): ref IcUi->Ui;
+maybecheckresize: fn(u: ref IcUi->Ui): ref IcUi->Ui;
+
+#
+# Terminal lifecycle.
+#
+enterappscreen: fn();
+leaveappscreen: fn();
+restoreterminal: fn();
 
 #
 # Terminal detection.
@@ -204,6 +312,8 @@ rndchar: fn(): string;
 initmatrix: fn();
 resetmatrix: fn(u: ref IcUi->Ui);
 resetstream: fn(i: int);
+streamx: fn(i: int): int;
+processstreams: fn(u: ref IcUi->Ui);
 
 #
 # Stream geometry.
@@ -240,11 +350,85 @@ handleanimkey: fn(u: ref IcUi->Ui, k: int): int;
 appmsg: fn(u: ref IcUi->Ui, m: IcMsg->Msg);
 
 #
+# Optional raw mouse handling.
+#
+parseintat: fn(s: string, i: int): (int, int, int);
+openmouse: fn(): int;
+closemouse: fn();
+togglemouse: fn(u: ref IcUi->Ui);
+handlemouse: fn(u: ref IcUi->Ui, raw: string): int;
+
+#
 # Background processes.
 #
 keyproc: fn();
-streamproc: fn(i: int);
+mouseproc: fn();
+animproc: fn();
 streamdelay: fn(i: int): int;
+
+#
+# Cleanup.
+#
+cleanup: fn(u: ref IcUi->Ui);
+
+#
+# Enter alternate screen mode.
+#
+# Use `%c` with character code 27. Limbo string escapes such as `\033` are not
+# portable here and may be printed literally by the hosted console path.
+#
+enterappscreen()
+{
+	if(out == nil)
+		return;
+
+	if(appscreen)
+		return;
+
+	sys->fprint(out, "%c[?1049h", 27);
+	ic->resettty(out);
+	ic->hidecursor(out);
+	ic->cleartty(out);
+
+	appscreen = 1;
+}
+
+#
+# Leave alternate screen mode.
+#
+# Clear the visible screen before leaving. If alternate-screen mode is not
+# supported by the host, this still removes Matrix cells from the normal
+# console buffer before returning to the shell.
+#
+leaveappscreen()
+{
+	if(out == nil)
+		return;
+
+	ic->resettty(out);
+	ic->showcursor(out);
+	ic->cleartty(out);
+
+	if(appscreen){
+		sys->fprint(out, "%c[?1049l", 27);
+		appscreen = 0;
+	}
+
+	ic->resettty(out);
+	ic->showcursor(out);
+}
+
+#
+# Restore terminal attributes that this demo may have changed.
+#
+restoreterminal()
+{
+	if(out == nil)
+		return;
+
+	ic->resettty(out);
+	ic->showcursor(out);
+}
 
 #
 # Read terminal geometry and capabilities through Icurses->consinfo().
@@ -252,7 +436,8 @@ streamdelay: fn(i: int): int;
 # This function centralizes all terminal-dependent policy:
 # - geometry fallback;
 # - color/truecolor detection;
-# - UTF-8 detection;
+# - raw UTF-8 detection;
+# - glyph policy;
 # - source string used in the status line.
 #
 readconsoleparams()
@@ -267,36 +452,104 @@ readconsoleparams()
 	colors = 16;
 	truecolor = 0;
 	terminalutf8 = 0;
+	glyphutf8 = 0;
 	conssource = "default";
 
 	ci = ic->consinfo();
 
-	cw = ci.cols;
-	ch = ci.rows;
+	if(ci.ok){
+		cw = ci.cols;
+		ch = ci.rows;
 
-	if(cw < 40)
+		colors = ci.colors;
+		truecolor = ci.truecolor;
+		terminalutf8 = ci.utf8;
+		glyphutf8 = ci.utf8;
+		conssource = ci.source;
+	}
+	else{
+		(cw, ch) = ic->termsize();
+		conssource = "termsize";
+	}
+
+	if(cw <= 0 || cw > MaxW)
 		cw = DefaultW;
-	if(ch < 15)
+	if(ch <= 0 || ch > MaxH)
 		ch = DefaultH;
 
-	colors = ci.colors;
-	truecolor = ci.truecolor;
-	terminalutf8 = ci.utf8;
-	conssource = ci.source;
+	if(cw < MinW)
+		cw = MinW;
+	if(ch < MinH)
+		ch = MinH;
+
+	if(conssource == "mingw-console")
+		glyphutf8 = 0;
 
 	statusy0 = ch - 2;
 	statusy1 = ch - 1;
 }
 
 #
-# Return the default charset for the detected terminal.
+# Current panel width, clamped to the active terminal geometry.
 #
-# UTF-8 terminals start with the native Matrix glyph order.
-# Non-UTF-8 terminals start with ASCII for maximum safety.
+panelw(): int
+{
+	w, maxw: int;
+
+	w = PanelW;
+	maxw = cw - PanelX - 1;
+
+	if(maxw < 4)
+		maxw = 4;
+
+	if(w > maxw)
+		w = maxw;
+
+	if(w < 4)
+		w = 4;
+
+	return w;
+}
+
+#
+# Current panel height, clamped to leave room for status/help rows.
+#
+panelh(): int
+{
+	h, maxh: int;
+
+	h = PanelH;
+	maxh = statusy0 - PanelY;
+
+	if(maxh < 3)
+		maxh = 3;
+
+	if(h > maxh)
+		h = maxh;
+
+	if(h < 3)
+		h = 3;
+
+	return h;
+}
+
+#
+# Build a unique canvas id for the current UI generation.
+#
+makecanvasid(): string
+{
+	return CanvasBase + "." + sys->sprint("%d", resizes);
+}
+
+#
+# Return the default charset for the detected terminal policy.
+#
+# Unicode-friendly terminals start with the native Matrix glyph order.
+# Conservative terminals start with ASCII for maximum safety.
 #
 defaultcharset(): int
 {
-	if(terminalutf8)
+	if(glyphutf8)
 		return CharsetRevol;
 
 	return CharsetAscii;
@@ -339,17 +592,17 @@ setcharset()
 #
 # Advance to the next charset.
 #
-# The order is intentionally terminal-dependent:
+# The order is intentionally terminal-policy dependent:
 #
-# UTF-8:
+# Unicode-friendly:
 #   Revol -> Resur -> CJK -> ASCII -> Cyrillic -> Revol
 #
-# non-UTF-8:
+# Conservative:
 #   ASCII -> Cyrillic -> Revol -> Resur -> CJK -> ASCII
 #
 nextcharset()
 {
-	if(terminalutf8){
+	if(glyphutf8){
 		case charsetmode {
 		CharsetRevol =>
 			charsetmode = CharsetResur;
@@ -424,8 +677,8 @@ charsetname(): string
 #
 # Build the bottom status line.
 #
-# Real applications usually centralize status text construction like this,
-# because many actions can update the same status area.
+# Keep it compact: Windows console scrollback and horizontal scrollbars are
+# sensitive to long terminal lines. All numbers are formatted through sprint.
 #
 statusline(): string
 {
@@ -434,18 +687,17 @@ statusline(): string
 	if(paused)
 		state = "paused";
 	else
-		state = "running";
+		state = "run";
 
-	return state +
-		" | key=" + string lastkey +
-		" | speed=" + string speedcoef +
-		" | streams=" + string MaxStreams +
-		" | charset=" + charsetname() +
-		" | utf8=" + string terminalutf8 +
-		" | truecolor=" + string truecolor +
-		" | colors=" + string colors +
-		" | size=" + string cw + "x" + string ch +
-		" | " + conssource;
+	return sys->sprint("Matrix %s spd=%d cs=%s size=%dx%d r=%d m=%d src=%s",
+		state,
+		speedcoef,
+		charsetname(),
+		cw,
+		ch,
+		resizes,
+		mouseopen,
+		conssource);
 }
 
 #
@@ -546,7 +798,7 @@ fadecode(v: int): string
 		* =>
 			if(v > 6)
 				return "38;2;220;255;220;40";
-			return "0;30;40";
+			return BgCode;
 		}
 	}
 
@@ -572,7 +824,7 @@ fadecode(v: int): string
 	* =>
 		if(v > 6)
 			return "1;37;40";
-		return "0;30;40";
+		return BgCode;
 	}
 }
 
@@ -615,15 +867,61 @@ streambottom(head: int): int
 }
 
 #
+# Compute the horizontal column for a stream.
+#
+# This uses an integer error accumulator instead of a multiplication/division
+# formula. It is deliberately simple and robust on the hosted Limbo runtime.
+# The result maps stream indexes across the full [0..cw-1] range.
+#
+streamx(i: int): int
+{
+	k, x, err, den, span: int;
+
+	if(cw <= 1)
+		return 0;
+
+	if(MaxStreams <= 1)
+		return cw / 2;
+
+	if(i < 0)
+		i = 0;
+	if(i >= MaxStreams)
+		i = MaxStreams - 1;
+
+	span = cw - 1;
+	den = MaxStreams - 1;
+
+	x = 0;
+	err = 0;
+
+	for(k = 0; k < i; k++){
+		err += span;
+
+		while(err >= den){
+			x++;
+			err -= den;
+		}
+	}
+
+	if(x < 0)
+		x = 0;
+	if(x >= cw)
+		x = cw - 1;
+
+	return x;
+}
+
+#
 # Allocate and initialize all stream state arrays.
 #
 initmatrix()
 {
-	i, spacing, x: int;
+	i, now: int;
 
 	setcharset();
 
 	seed = 1234567;
+	now = sys->millisec();
 
 	sx = array[MaxStreams] of int;
 	shead = array[MaxStreams] of int;
@@ -632,21 +930,20 @@ initmatrix()
 	sbasedelay = array[MaxStreams] of int;
 	sdrift = array[MaxStreams] of int;
 	sphase = array[MaxStreams] of int;
-
-	spacing = cw / MaxStreams;
-	if(spacing < 3)
-		spacing = 3;
+	snext = array[MaxStreams] of int;
 
 	for(i = 0; i < MaxStreams; i++){
-		x = 2 + i * spacing;
-
-		if(x < 0)
-			x = 0;
-		if(x >= cw)
-			x = cw - 1;
-
-		sx[i] = x;
+		sx[i] = streamx(i);
 		resetstream(i);
+
+		#
+		# Start just above the top edge at different small depths and make the
+		# first pass due immediately. This prevents a synchronized visible
+		# start without reintroducing startup delay or full-height splash.
+		#
+		shead[i] = -(1 + rand(StartDepthMax));
+		soldhead[i] = shead[i];
+		snext[i] = now;
 	}
 }
 
@@ -658,13 +955,15 @@ resetstream(i: int)
 	if(i < 0 || i >= MaxStreams)
 		return;
 
-	shead[i] = -rand(ch);
-	soldhead[i] = shead[i];
-
 	stail[i] = 6 + rand(18);
 	sbasedelay[i] = 45 + rand(160);
 	sdrift[i] = rand(41) - 20;
 	sphase[i] = rand(1000);
+
+	shead[i] = -(1 + rand(ch + stail[i]));
+	soldhead[i] = shead[i];
+
+	snext[i] = sys->millisec() + streamdelay(i);
 }
 
 #
@@ -673,7 +972,7 @@ resetstream(i: int)
 resetmatrix(u: ref IcUi->Ui)
 {
 	initmatrix();
-	ui->canvasclear(u, CanvasId, " ", "0;30;40");
+	ui->canvasclear(u, canvasid, " ", BgCode);
 	resyncmatrix(u);
 }
 
@@ -689,7 +988,7 @@ covered(x, y: int): int
 		return 1;
 
 	if(panelvisible){
-		if(x >= PanelX && x < PanelX + PanelW && y >= PanelY && y < PanelY + PanelH)
+		if(x >= PanelX && x < PanelX + panelw() && y >= PanelY && y < PanelY + panelh())
 			return 1;
 	}
 
@@ -711,9 +1010,9 @@ putcell(u: ref IcUi->Ui, x, y: int, chs, code: string)
 		chs = " ";
 
 	if(code == "")
-		code = "0;30;40";
+		code = BgCode;
 
-	ui->canvasputc(u, CanvasId, x, y, chs, code);
+	ui->canvasputc(u, canvasid, x, y, chs, code);
 
 	if(covered(x, y))
 		return;
@@ -744,7 +1043,7 @@ clearstream(u: ref IcUi->Ui, i: int, oldhead: int)
 		bot = ch - 1;
 
 	for(y = top; y <= bot; y++)
-		putcell(u, x, y, " ", "0;30;40");
+		putcell(u, x, y, " ", BgCode);
 
 	ic->resettty(out);
 }
@@ -786,7 +1085,7 @@ drawstream(u: ref IcUi->Ui, i: int, oldhead, newhead: int)
 
 	for(y = top; y <= bot; y++){
 		if(y < newtop || y > newbot){
-			putcell(u, x, y, " ", "0;30;40");
+			putcell(u, x, y, " ", BgCode);
 			continue;
 		}
 
@@ -807,13 +1106,17 @@ drawstream(u: ref IcUi->Ui, i: int, oldhead, newhead: int)
 #
 updatestream(u: ref IcUi->Ui, i: int)
 {
-	old, step: int;
+	old, step, now: int;
 
 	if(i < 0 || i >= MaxStreams)
 		return;
 
-	if(paused)
+	now = sys->millisec();
+
+	if(paused){
+		snext[i] = now + 100;
 		return;
+	}
 
 	old = shead[i];
 
@@ -843,10 +1146,32 @@ updatestream(u: ref IcUi->Ui, i: int)
 
 	drawstream(u, i, old, shead[i]);
 	soldhead[i] = shead[i];
+	snext[i] = now + streamdelay(i);
 }
 
 #
-# Compute the next wake-up delay for one stream process.
+# Process due streams on one animation tick.
+#
+# Only streams whose deadline has expired are redrawn. This keeps the sparse
+# look of independently timed streams without using one process per stream.
+#
+processstreams(u: ref IcUi->Ui)
+{
+	i, now: int;
+
+	if(u == nil || snext == nil)
+		return;
+
+	now = sys->millisec();
+
+	for(i = 0; i < MaxStreams; i++){
+		if(now >= snext[i])
+			updatestream(u, i);
+	}
+}
+
+#
+# Compute the next wake-up delay for one stream.
 #
 streamdelay(i: int): int
 {
@@ -862,8 +1187,8 @@ streamdelay(i: int): int
 
 	d += rand(31) - 15;
 
-	if(d < 8)
-		d = 8;
+	if(d < 16)
+		d = 16;
 	if(d > 500)
 		d = 500;
 
@@ -931,17 +1256,18 @@ build(u: ref IcUi->Ui)
 	root: string;
 
 	root = ui->rootid(u);
+	canvasid = makecanvasid();
 
 	ui->setframestyle(u, IcPaint->FrameSingle);
 	ui->setstatusrows(u, statusy0, statusy1);
-	ui->sethelp(u, " Matrix | + faster | - slower | c charset | t truecolor | h panel | Space pause | q/Esc quit ");
+	ui->sethelp(u, " Matrix | m mouse | + faster | - slower | c charset | t truecolor | h panel | Space pause | q/Esc quit ");
 
-	ui->canvas(u, root, CanvasId, 0, 0, cw, ch);
+	ui->canvas(u, root, canvasid, 0, 0, cw, ch);
 
-	ui->window(u, root, "win.panel", PanelX, PanelY, PanelW, PanelH, "Animation control (press `h` to hide)");
+	ui->window(u, root, "win.panel", PanelX, PanelY, panelw(), panelh(), "Animation control (press `h` to hide)");
 	ui->setframe(u, "win.panel", IcPaint->FrameDouble);
 	ui->setcontent(u, "win.panel",
-		"Sparse async stream model. c cycles charset order based on utf8 from /dev/consinfo. t toggles truecolor.");
+		"Sparse scheduled stream model. c cycles charset by terminal source policy. t toggles truecolor. Press m to toggle optional mouse wheel focus.");
 	ui->setscroll(u, "win.panel", IcView->ScrollClip, 0);
 
 	ui->button(u, "win.panel", "btn.pause", 2, 5, 11, 1, "Pause", "", "app", "app.pause");
@@ -961,9 +1287,99 @@ build(u: ref IcUi->Ui)
 	ui->bindkey(u, "T", "app", "app.truecolor");
 	ui->bindkey(u, "h", "win.panel", "node.toggle");
 	ui->bindkey(u, "H", "win.panel", "node.toggle");
+	ui->bindkey(u, "m", "app", "app.mouse");
+	ui->bindkey(u, "M", "app", "app.mouse");
+
+	if(!panelvisible)
+		ui->dispatch(u, msg->newmsg("matrix", "win.panel", IcMsg->KindCommand, "node.toggle"));
 
 	ui->setfocus(u, "btn.pause");
 	ui->setstatus(u, statusline());
+}
+
+#
+# Rebuild the UI after a terminal size change.
+#
+# Do not call ui->close(old) while the raw input loop is active. Closing the
+# old renderer during live input can disturb tty state. The old UI is detached
+# from large buffers so the runtime can reclaim most memory.
+#
+rebuildui(u: ref IcUi->Ui, oldw, oldh: int): ref IcUi->Ui
+{
+	nu: ref IcUi->Ui;
+	msgtext: string;
+
+	if(u != nil && u.renderer != nil){
+		u.renderer.front = nil;
+		u.renderer.back = nil;
+		u.renderer.out = nil;
+	}
+	if(u != nil)
+		u.tree = nil;
+
+	resizes++;
+	initmatrix();
+
+	nu = ui->new(out, cw, ch);
+	if(nu == nil)
+		return nil;
+
+	build(nu);
+
+	ui->canvasclear(nu, canvasid, " ", BgCode);
+
+	msgtext = sys->sprint("resize %dx%d -> %dx%d | %s",
+		oldw, oldh, cw, ch, statusline());
+
+	ui->setstatus(nu, msgtext);
+	fulldraw(nu);
+
+	return nu;
+}
+
+#
+# Check whether the host terminal size changed.
+#
+# If a resize is detected, the UI is rebuilt to match the new console
+# dimensions. User-selected truecolor and charset mode are preserved.
+#
+checkresize(u: ref IcUi->Ui): ref IcUi->Ui
+{
+	oldw, oldh, keeptruecolor, keepcharset: int;
+
+	oldw = cw;
+	oldh = ch;
+	keeptruecolor = truecolor;
+	keepcharset = charsetmode;
+
+	readconsoleparams();
+
+	truecolor = keeptruecolor;
+	charsetmode = keepcharset;
+	setcharset();
+
+	if(cw == oldw && ch == oldh)
+		return u;
+
+	return rebuildui(u, oldw, oldh);
+}
+
+#
+# Throttled resize check.
+#
+# This avoids reading /dev/consinfo on every animation event.
+#
+maybecheckresize(u: ref IcUi->Ui): ref IcUi->Ui
+{
+	now: int;
+
+	now = sys->millisec();
+
+	if(lastresizecheck != 0 && now - lastresizecheck < ResizeCheckMs)
+		return u;
+
+	lastresizecheck = now;
+	return checkresize(u);
 }
 
 #
@@ -1038,6 +1454,14 @@ handleanimkey(u: ref IcUi->Ui, k: int): int
 		fulldraw(u);
 		return 1;
 
+	'm' =>
+		togglemouse(u);
+		return 1;
+
+	'M' =>
+		togglemouse(u);
+		return 1;
+
 	* =>
 		return 0;
 	}
@@ -1083,9 +1507,167 @@ appmsg(u: ref IcUi->Ui, m: IcMsg->Msg)
 		fulldraw(u);
 		return;
 
+	"app.mouse" =>
+		togglemouse(u);
+		return;
+
 	* =>
 		return;
 	}
+}
+
+#
+# Parse one integer at offset i.
+#
+# The mouse event file is simple text, so a local parser keeps this example
+# independent from additional helper modules.
+#
+parseintat(s: string, i: int): (int, int, int)
+{
+	sign, v, ok: int;
+
+	while(i < len s && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r'))
+		i++;
+
+	sign = 1;
+	if(i < len s && s[i] == '-'){
+		sign = -1;
+		i++;
+	}
+
+	v = 0;
+	ok = 0;
+
+	while(i < len s && s[i] >= '0' && s[i] <= '9'){
+		v = v * 10 + int s[i] - int '0';
+		i++;
+		ok = 1;
+	}
+
+	if(!ok)
+		return (0, i, 0);
+
+	return (sign * v, i, 1);
+}
+
+#
+# Open optional raw mouse input.
+#
+# Failure is not fatal. The demo remains fully keyboard-controllable.
+#
+openmouse(): int
+{
+	if(mousefd != nil)
+		return 0;
+
+	mousefd = sys->open(MousePath, Sys->OREAD);
+	if(mousefd == nil){
+		mouseopen = 0;
+		return -1;
+	}
+
+	mouseopen = 1;
+	return 0;
+}
+
+#
+# Close optional raw mouse input.
+#
+closemouse()
+{
+	mousefd = nil;
+	mouseopen = 0;
+}
+
+#
+# Toggle optional mouse support.
+#
+# Enabling mouse may make the host console route wheel input to the application
+# instead of its scrollbars. That is why mouse remains toggleable even though
+# the demo enables it by default.
+#
+togglemouse(u: ref IcUi->Ui)
+{
+	if(mouseopen){
+		closemouse();
+		ui->setstatus(u, "mouse off | " + statusline());
+		fulldraw(u);
+		return;
+	}
+
+	if(openmouse() == 0){
+		spawn mouseproc();
+		ui->setstatus(u, "mouse on | " + statusline());
+	}
+	else
+		ui->setstatus(u, "mouse unavailable | " + statusline());
+
+	fulldraw(u);
+}
+
+#
+# Handle one raw mouse event.
+#
+# Wheel events move focus by one item per delivered mouse record.
+#
+handlemouse(u: ref IcUi->Ui, raw: string): int
+{
+	i, ok, x, y, buttons, mods: int;
+	id: string;
+
+	x = 0;
+	y = 0;
+	mods = 0;
+
+	if(u == nil || raw == "" || len raw < 2)
+		return 0;
+
+	if(raw[0] != 'm')
+		return 0;
+
+	i = 1;
+
+	(x, i, ok) = parseintat(raw, i);
+	if(!ok)
+		return 0;
+
+	(y, i, ok) = parseintat(raw, i);
+	if(!ok)
+		return 0;
+
+	(buttons, i, ok) = parseintat(raw, i);
+	if(!ok)
+		return 0;
+
+	(mods, i, ok) = parseintat(raw, i);
+	if(!ok)
+		mods = 0;
+
+	if((buttons & MouseWheelUp) != 0){
+		id = view->prevfocus(u.tree);
+		if(id != ""){
+			ui->setfocus(u, id);
+			ui->setstatus(u, "wheel up focus " + id + " | " + statusline());
+			fulldraw(u);
+			return 1;
+		}
+	}
+
+	if((buttons & MouseWheelDown) != 0){
+		id = view->nextfocus(u.tree);
+		if(id != ""){
+			ui->setfocus(u, id);
+			ui->setstatus(u, "wheel down focus " + id + " | " + statusline());
+			fulldraw(u);
+			return 1;
+		}
+	}
+
+	x = x;
+	y = y;
+	mods = mods;
+
+	return 0;
 }
 
 #
@@ -1114,24 +1696,84 @@ keyproc()
 }
 
 #
-# Independent per-stream timer process.
+# Optional mouse reader process.
 #
-# Instead of a single global animation loop, each stream sleeps according to
-# its own speed and then posts its stream index to streamc.
+# It drops events when the channel is full. Mouse input is auxiliary, so it
+# must never block shutdown or animation.
 #
-streamproc(i: int)
+mouseproc()
+{
+	n: int;
+	raw: string;
+
+	for(;;){
+		if(!running)
+			return;
+
+		if(mousefd == nil)
+			return;
+
+		n = sys->read(mousefd, mousebuf, len mousebuf);
+
+		if(!running)
+			return;
+
+		if(n <= 0)
+			return;
+
+		raw = string mousebuf[0:n];
+
+		alt {
+		mousec <-= raw =>
+			;
+
+		* =>
+			;
+		}
+	}
+}
+
+#
+# Single animation timer process.
+#
+# It posts lightweight ticks. The main loop decides which streams are due.
+#
+animproc()
 {
 	for(;;){
 		if(!running)
 			return;
 
-		sys->sleep(streamdelay(i));
+		sys->sleep(AnimTickMs);
 
 		if(!running)
 			return;
 
-		streamc <-= i;
+		alt {
+		streamc <-= 1 =>
+			;
+
+		* =>
+			;
+		}
 	}
+}
+
+#
+# Clean up terminal, input, mouse, and renderer state.
+#
+cleanup(u: ref IcUi->Ui)
+{
+	running = 0;
+
+	closemouse();
+	ui->closeinput();
+
+	if(u != nil)
+		ui->close(u);
+
+	restoreterminal();
+	leaveappscreen();
 }
 
 #
@@ -1140,19 +1782,24 @@ streamproc(i: int)
 # The overall application lifecycle is:
 #
 # 1. Load modules.
-# 2. Read terminal capabilities.
-# 3. Initialize model state.
-# 4. Build the icurses UI tree.
-# 5. Open keyboard input.
-# 6. Spawn background processes.
-# 7. Run the main event loop.
-# 8. Close input/UI cleanly.
+# 2. Enter the alternate terminal screen.
+# 3. Read terminal capabilities.
+# 4. Initialize model state.
+# 5. Build the icurses UI tree.
+# 6. Open keyboard and mouse input.
+# 7. Spawn background processes.
+# 8. Run the main event loop.
+# 9. Close input/UI and restore the terminal cleanly.
 #
 init(nil: ref Draw->Context, nil: list of string)
 {
 	u: ref IcUi->Ui;
-	k, sid, done, i: int;
+	k, tick, done: int;
+	raw: string;
 	m: IcMsg->Msg;
+
+	u = nil;
+	appscreen = 0;
 
 	sys = load Sys Sys->PATH;
 	if(sys == nil)
@@ -1170,12 +1817,18 @@ init(nil: ref Draw->Context, nil: list of string)
 	if(msg == nil)
 		raise "fail:load icmsg";
 
+	view = load IcView IcView->PATH;
+	if(view == nil)
+		raise "fail:load icview";
+
 	ic->init();
 	ui->init();
 	msg->init();
+	view->init();
 
 	out = sys->fildes(1);
 
+	enterappscreen();
 	readconsoleparams();
 
 	paused = 0;
@@ -1184,33 +1837,62 @@ init(nil: ref Draw->Context, nil: list of string)
 	running = 0;
 	lastkey = 0;
 	panelvisible = 1;
+	resizes = 0;
+	mouseopen = 0;
+	lastresizecheck = 0;
+
+	mousefd = nil;
+	mousebuf = array[128] of byte;
 
 	setcharset();
 
-	keyc = chan of int;
-	streamc = chan of int;
+	keyc = chan[16] of int;
+	streamc = chan[16] of int;
+	mousec = chan[16] of string;
 
 	initmatrix();
 
 	u = ui->new(out, cw, ch);
+	if(u == nil){
+		restoreterminal();
+		leaveappscreen();
+		sys->print("cannot create ui\n");
+		return;
+	}
+
 	build(u);
 
-	ui->canvasclear(u, CanvasId, " ", "0;30;40");
+	ui->canvasclear(u, canvasid, " ", BgCode);
 	fulldraw(u);
 
 	if(ui->openinput() < 0){
 		ui->close(u);
+		restoreterminal();
+		leaveappscreen();
 		sys->print("cannot open keyboard\n");
 		return;
 	}
+
+	openmouse();
+
+	ui->setstatus(u, statusline());
+	fulldraw(u);
 
 	running = 1;
 	done = 0;
 
 	spawn keyproc();
+	spawn animproc();
 
-	for(i = 0; i < MaxStreams; i++)
-		spawn streamproc(i);
+	if(mouseopen)
+		spawn mouseproc();
+
+	#
+	# Draw the first due stream updates immediately, before the first timer
+	# tick arrives. Initial head depths are randomized, so this does not create
+	# a synchronized all-column visible start.
+	#
+	processstreams(u);
 
 	for(; !done;) alt {
 	k = <-keyc =>
@@ -1226,6 +1908,12 @@ init(nil: ref Draw->Context, nil: list of string)
 			break;
 		}
 
+		u = checkresize(u);
+		if(u == nil){
+			done = 1;
+			break;
+		}
+
 		if(handleanimkey(u, k))
 			break;
 
@@ -1234,18 +1922,32 @@ init(nil: ref Draw->Context, nil: list of string)
 		appmsg(u, m);
 
 		if(m.kind == IcMsg->KindNone){
-			ui->setstatus(u, "raw unhandled key=" + string k + " | " + statusline());
+			ui->setstatus(u, "raw key=" + sys->sprint("%d", k) + " | " + statusline());
 			fulldraw(u);
 		}
 
-	sid = <-streamc =>
-		if(sid >= 0 && sid < MaxStreams)
-			updatestream(u, sid);
+	raw = <-mousec =>
+		u = maybecheckresize(u);
+		if(u == nil){
+			done = 1;
+			break;
+		}
+
+		handlemouse(u, raw);
+
+	tick = <-streamc =>
+		tick = tick;
+
+		u = maybecheckresize(u);
+		if(u == nil){
+			done = 1;
+			break;
+		}
+
+		processstreams(u);
 	}
 
-	running = 0;
-	ui->closeinput();
-	ui->close(u);
+	cleanup(u);
 
 	sys->print("\nresult: ok\n");
 }
