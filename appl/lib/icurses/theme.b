@@ -51,11 +51,12 @@ sgr(attr: int): string
 		# Shadow is a compositing effect in paint.b:
 		# Cell.ch is preserved, only Cell.code is replaced.
 		#
-		# Use a dark background and muted foreground so text/frames
-		# remain visible but look dimmed.
+		# Use a neutral dark gray background instead of pure black.
+		# This keeps the shadow visible on common black terminals while
+		# preserving the underlying glyphs.
 		#
 		if(attr == AttrShadow)
-			return "38;2;120;130;150;48;2;6;14;30";
+			return "38;2;170;180;190;48;2;45;45;45";
 
 		if(attr == AttrEffectHead)
 			return "38;2;220;255;220;40";
@@ -95,7 +96,7 @@ sgr(attr: int): string
 	# It preserves glyphs and only changes their style.
 	#
 	if(attr == AttrShadow)
-		return "0;37;40";
+		return "0;37;100";
 
 	if(attr == AttrEffectHead)
 		return "1;37;40";
