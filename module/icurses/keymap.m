@@ -7,7 +7,7 @@ IcKeymap: module
 	Binding: adt
 	{
 		key:    string;
-		target: string;
+		target: int;
 		cmd:    string;
 
 		sarg:   string;
@@ -25,8 +25,8 @@ IcKeymap: module
 
 	new: fn(): ref Keymap;
 
-	bind: fn(km: ref Keymap, key, target, cmd: string): int;
-	bindargs: fn(km: ref Keymap, key, target, cmd, sarg: string, iarg0, iarg1, iarg2: int): int;
+	bind: fn(km: ref Keymap, key: string, target: int, cmd: string): int;
+	bindargs: fn(km: ref Keymap, key: string, target: int, cmd, sarg: string, iarg0, iarg1, iarg2: int): int;
 
 	find: fn(km: ref Keymap, k: int): IcMsg->Msg;
 };

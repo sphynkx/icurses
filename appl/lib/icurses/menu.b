@@ -19,9 +19,9 @@ itemwidth: fn(it: IcMenu->Item): int;
 popupitemline: fn(it: IcMenu->Item, w, selected: int): string;
 baritemtext: fn(it: IcMenu->Item, selected: int): string;
 
-ensurelabel: fn(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): int;
-hidelabel: fn(u: ref IcUi->Ui, id: string);
-drawbar: fn(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int, action: int): int;
+ensurelabel: fn(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, text: string): int;
+hidelabel: fn(u: ref IcUi->Ui, id: int);
+drawbar: fn(u: ref IcUi->Ui, id: int, items: array of IcMenu->Item, sel: int, action: int): int;
 
 init()
 {
@@ -49,7 +49,7 @@ init()
 	view->init();
 }
 
-newitem(label, hotkey, targetid, command: string): IcMenu->Item
+newitem(label, hotkey: string, targetid: int, command: string): IcMenu->Item
 {
 	it: IcMenu->Item;
 
@@ -62,7 +62,7 @@ newitem(label, hotkey, targetid, command: string): IcMenu->Item
 	it.targetid = targetid;
 	it.command = command;
 
-	it.submenuid = "";
+	it.submenuid = IcView->NoId;
 	it.status = "";
 
 	return it;
@@ -78,16 +78,16 @@ newseparator(): IcMenu->Item
 	it.label = "";
 	it.hotkey = "";
 
-	it.targetid = "";
+	it.targetid = IcView->NoId;
 	it.command = "";
 
-	it.submenuid = "";
+	it.submenuid = IcView->NoId;
 	it.status = "";
 
 	return it;
 }
 
-newsubmenu(label, hotkey, submenuid: string): IcMenu->Item
+newsubmenu(label, hotkey: string, submenuid: int): IcMenu->Item
 {
 	it: IcMenu->Item;
 
@@ -97,7 +97,7 @@ newsubmenu(label, hotkey, submenuid: string): IcMenu->Item
 	it.label = label;
 	it.hotkey = hotkey;
 
-	it.targetid = "";
+	it.targetid = IcView->NoId;
 	it.command = "";
 
 	it.submenuid = submenuid;
@@ -337,7 +337,7 @@ baritemtext(it: IcMenu->Item, selected: int): string
 	return " " + s + " ";
 }
 
-ensurelabel(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): int
+ensurelabel(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, text: string): int
 {
 	n: ref IcView->Node;
 
@@ -358,7 +358,7 @@ ensurelabel(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): 
 	return 0;
 }
 
-hidelabel(u: ref IcUi->Ui, id: string)
+hidelabel(u: ref IcUi->Ui, id: int)
 {
 	n: ref IcView->Node;
 
@@ -373,9 +373,10 @@ hidelabel(u: ref IcUi->Ui, id: string)
 	view->hide(n);
 }
 
-popupmenu(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, title: string, items: array of IcMenu->Item, sel: int): int
+popupmenu(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, title: string, items: array of IcMenu->Item, sel: int): int
 {
 	h, rows: int;
+	shadowid: int;
 
 	if(u == nil)
 		return -1;
@@ -394,17 +395,19 @@ popupmenu(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, title: string, it
 	if(h < 3)
 		h = 3;
 
-	if(ui->shadowwindow(u, parentid, id, x, y, w, h, title, 2, 1) < 0)
+	shadowid = view->allocid(u.tree);
+
+	if(ui->shadowwindow(u, parentid, shadowid, id, x, y, w, h, title, 2, 1) < 0)
 		return -1;
 
 	return setpopupmenu(u, id, items, sel);
 }
 
-setpopupmenu(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int): int
+setpopupmenu(u: ref IcUi->Ui, id: int, items: array of IcMenu->Item, sel: int): int
 {
 	n: ref IcView->Node;
-	line, rowid: string;
-	rows, cols, i, count, oldcount, maxold: int;
+	line: string;
+	rows, cols, i, count, oldcount, maxold, rowid: int;
 
 	if(u == nil || u.tree == nil)
 		return -1;
@@ -428,13 +431,23 @@ setpopupmenu(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int
 		maxold = count;
 
 	for(i = 0; i < maxold; i++){
-		rowid = id + ".row." + sys->sprint("%d", i);
+		if(i < view->childcount(n))
+			rowid = view->childat(n, i);
+		else
+			rowid = IcView->NoId;
+
+		if(rowid == IcView->NoId)
+			continue;
+
 		if(i >= rows || i >= count)
 			hidelabel(u, rowid);
 	}
 
 	if(count <= 0){
-		rowid = id + ".row.0";
+		if(view->childcount(n) <= 0)
+			return -1;
+
+		rowid = view->childat(n, 0);
 		ensurelabel(u, id, rowid, 1, 1, cols, padright("(empty)", cols));
 		view->setargs(n, "", 0, -1, 0);
 		return 0;
@@ -446,7 +459,14 @@ setpopupmenu(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int
 		sel = count - 1;
 
 	for(i = 0; i < rows && i < count; i++){
-		rowid = id + ".row." + sys->sprint("%d", i);
+		if(i < view->childcount(n))
+			rowid = view->childat(n, i);
+		else{
+			rowid = view->allocid(u.tree);
+			if(ui->label(u, id, rowid, 1, 1 + i, cols, "") < 0)
+				return -1;
+		}
+
 		line = popupitemline(items[i], cols, i == sel);
 		ensurelabel(u, id, rowid, 1, 1 + i, cols, line);
 	}
@@ -455,7 +475,7 @@ setpopupmenu(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int
 	return 0;
 }
 
-navbar(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, items: array of IcMenu->Item, sel: int): int
+navbar(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, items: array of IcMenu->Item, sel: int): int
 {
 	if(u == nil)
 		return -1;
@@ -469,12 +489,12 @@ navbar(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, items: array of IcMe
 	return setnavbar(u, id, items, sel);
 }
 
-setnavbar(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int): int
+setnavbar(u: ref IcUi->Ui, id: int, items: array of IcMenu->Item, sel: int): int
 {
 	return drawbar(u, id, items, sel, 0);
 }
 
-actionbar(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, items: array of IcMenu->Item, sel: int): int
+actionbar(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, items: array of IcMenu->Item, sel: int): int
 {
 	if(u == nil)
 		return -1;
@@ -488,16 +508,16 @@ actionbar(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, items: array of I
 	return setactionbar(u, id, items, sel);
 }
 
-setactionbar(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int): int
+setactionbar(u: ref IcUi->Ui, id: int, items: array of IcMenu->Item, sel: int): int
 {
 	return drawbar(u, id, items, sel, 1);
 }
 
-drawbar(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int, action: int): int
+drawbar(u: ref IcUi->Ui, id: int, items: array of IcMenu->Item, sel: int, action: int): int
 {
 	n: ref IcView->Node;
-	i, x, w, count, oldcount, maxold: int;
-	s, itemid: string;
+	i, x, w, count, oldcount, maxold, itemid: int;
+	s: string;
 
 	action = action;
 
@@ -519,7 +539,14 @@ drawbar(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int, act
 		maxold = count;
 
 	for(i = 0; i < maxold; i++){
-		itemid = id + ".item." + sys->sprint("%d", i);
+		if(i < view->childcount(n))
+			itemid = view->childat(n, i);
+		else
+			itemid = IcView->NoId;
+
+		if(itemid == IcView->NoId)
+			continue;
+
 		if(i >= count)
 			hidelabel(u, itemid);
 	}
@@ -537,7 +564,13 @@ drawbar(u: ref IcUi->Ui, id: string, items: array of IcMenu->Item, sel: int, act
 	x = 0;
 
 	for(i = 0; i < count; i++){
-		itemid = id + ".item." + sys->sprint("%d", i);
+		if(i < view->childcount(n))
+			itemid = view->childat(n, i);
+		else{
+			itemid = view->allocid(u.tree);
+			if(ui->label(u, id, itemid, 0, 0, 1, "") < 0)
+				return -1;
+		}
 
 		if(separator(items[i])){
 			hidelabel(u, itemid);

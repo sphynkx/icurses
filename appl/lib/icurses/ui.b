@@ -52,7 +52,7 @@ lastmods: int;
 pressnode: fn(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg;
 
 hotkeymatch: fn(k: int, hotkey: string): int;
-findhotkeynode: fn(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node;
+findhotkeynode: fn(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node;
 findhotkey: fn(u: ref IcUi->Ui, k: int): ref IcView->Node;
 newstep: fn(kind, done, key, tick: int, m: IcMsg->Msg, status: string): IcUi->Step;
 
@@ -748,10 +748,10 @@ isquit(k: int): int
 	return 0;
 }
 
-rootid(u: ref IcUi->Ui): string
+rootid(u: ref IcUi->Ui): int
 {
 	if(u == nil || u.tree == nil)
-		return "";
+		return IcView->NoId;
 	return u.tree.rootid;
 }
 
@@ -785,24 +785,27 @@ setstatusrows(u: ref IcUi->Ui, helprow, statusrow: int)
 	u.statusrow = statusrow;
 }
 
-node(u: ref IcUi->Ui, parentid, id, kind: string, x, y, w, h: int): int
+node(u: ref IcUi->Ui, parentid, id: int, kind: string, x, y, w, h: int): int
 {
 	n: ref IcView->Node;
 
 	if(u == nil || u.tree == nil)
 		return -1;
 
-	n = view->newnode(id, kind, "", x, y, w, h);
+	if(id == IcView->NoId)
+		id = view->allocid(u.tree);
+
+	n = view->newnode(id, kind, IcView->NoId, x, y, w, h);
 
 	return view->addchildnode(u.tree, parentid, n);
 }
 
-group(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int): int
+group(u: ref IcUi->Ui, parentid, id: int, x, y, w, h: int): int
 {
 	return node(u, parentid, id, "group", x, y, w, h);
 }
 
-label(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): int
+label(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, text: string): int
 {
 	n: ref IcView->Node;
 
@@ -814,26 +817,32 @@ label(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): int
 	if(w <= 0)
 		w = 1;
 
-	n = view->newnode(id, "label", "", x, y, w, 1);
+	if(id == IcView->NoId)
+		id = view->allocid(u.tree);
+
+	n = view->newnode(id, "label", IcView->NoId, x, y, w, 1);
 	view->settext(n, text);
 
 	return view->addchildnode(u.tree, parentid, n);
 }
 
-window(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string): int
+window(u: ref IcUi->Ui, parentid, id: int, x, y, w, h: int, title: string): int
 {
 	n: ref IcView->Node;
 
 	if(u == nil || u.tree == nil)
 		return -1;
 
-	n = view->newnode(id, "window", "", x, y, w, h);
+	if(id == IcView->NoId)
+		id = view->allocid(u.tree);
+
+	n = view->newnode(id, "window", IcView->NoId, x, y, w, h);
 	view->settext(n, title);
 
 	return view->addchildnode(u.tree, parentid, n);
 }
 
-shadowwindow(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string, dx, dy: int): int
+shadowwindow(u: ref IcUi->Ui, parentid, shadowid, id: int, x, y, w, h: int, title: string, dx, dy: int): int
 {
 	if(u == nil || u.tree == nil)
 		return -1;
@@ -844,21 +853,27 @@ shadowwindow(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: stri
 		h = 3;
 
 	if(dx != 0 || dy != 0){
-		if(node(u, parentid, id + ".shadow", "shadow", x + dx, y + dy, w, h) < 0)
+		if(shadowid == IcView->NoId)
+			shadowid = view->allocid(u.tree);
+
+		if(node(u, parentid, shadowid, "shadow", x + dx, y + dy, w, h) < 0)
 			return -1;
 	}
 
 	return window(u, parentid, id, x, y, w, h, title);
 }
 
-button(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, label, hotkey, targetid, command: string): int
+button(u: ref IcUi->Ui, parentid, id: int, x, y, w, h: int, label, hotkey: string, targetid: int, command: string): int
 {
 	n: ref IcView->Node;
 
 	if(u == nil || u.tree == nil)
 		return -1;
 
-	n = view->newnode(id, "button", "", x, y, w, h);
+	if(id == IcView->NoId)
+		id = view->allocid(u.tree);
+
+	n = view->newnode(id, "button", IcView->NoId, x, y, w, h);
 	view->settext(n, label);
 	view->sethotkey(n, hotkey);
 	view->setaction(n, targetid, command);
@@ -867,15 +882,18 @@ button(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, label, hotkey, ta
 	return view->addchildnode(u.tree, parentid, n);
 }
 
-canvas(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int): int
+canvas(u: ref IcUi->Ui, parentid, id: int, x, y, w, h: int): int
 {
+	if(id == IcView->NoId && u != nil && u.tree != nil)
+		id = view->allocid(u.tree);
+
 	if(node(u, parentid, id, "canvas", x, y, w, h) < 0)
 		return -1;
 
 	return paint->canvasnew(id, w, h);
 }
 
-hbar(u: ref IcUi->Ui, parentid, id: string, x, y, w, value, total: int): int
+hbar(u: ref IcUi->Ui, parentid, id: int, x, y, w, value, total: int): int
 {
 	if(node(u, parentid, id, "hbar", x, y, w, 1) < 0)
 		return -1;
@@ -883,7 +901,7 @@ hbar(u: ref IcUi->Ui, parentid, id: string, x, y, w, value, total: int): int
 	return setbar(u, id, value, total);
 }
 
-vbar(u: ref IcUi->Ui, parentid, id: string, x, y, h, value, total: int): int
+vbar(u: ref IcUi->Ui, parentid, id: int, x, y, h, value, total: int): int
 {
 	if(node(u, parentid, id, "vbar", x, y, 1, h) < 0)
 		return -1;
@@ -891,7 +909,7 @@ vbar(u: ref IcUi->Ui, parentid, id: string, x, y, h, value, total: int): int
 	return setbar(u, id, value, total);
 }
 
-setbar(u: ref IcUi->Ui, id: string, value, total: int): int
+setbar(u: ref IcUi->Ui, id: int, value, total: int): int
 {
 	n: ref IcView->Node;
 	style: int;
@@ -917,7 +935,7 @@ setbar(u: ref IcUi->Ui, id: string, value, total: int): int
 	return 0;
 }
 
-progress(u: ref IcUi->Ui, parentid, id: string, x, y, w, value, total: int): int
+progress(u: ref IcUi->Ui, parentid, id: int, x, y, w, value, total: int): int
 {
 	if(w < 3)
 		w = 3;
@@ -928,12 +946,12 @@ progress(u: ref IcUi->Ui, parentid, id: string, x, y, w, value, total: int): int
 	return setprogress(u, id, value, total);
 }
 
-setprogress(u: ref IcUi->Ui, id: string, value, total: int): int
+setprogress(u: ref IcUi->Ui, id: int, value, total: int): int
 {
 	return setbar(u, id, value, total);
 }
 
-progressstyle(u: ref IcUi->Ui, id: string, style: int): int
+progressstyle(u: ref IcUi->Ui, id: int, style: int): int
 {
 	n: ref IcView->Node;
 
@@ -948,20 +966,23 @@ progressstyle(u: ref IcUi->Ui, id: string, style: int): int
 	return 0;
 }
 
-spinner(u: ref IcUi->Ui, parentid, id: string, x, y, style: int): int
+spinner(u: ref IcUi->Ui, parentid, id: int, x, y, style: int): int
 {
 	n: ref IcView->Node;
 
 	if(u == nil || u.tree == nil)
 		return -1;
 
-	n = view->newnode(id, "spinner", "", x, y, 1, 1);
+	if(id == IcView->NoId)
+		id = view->allocid(u.tree);
+
+	n = view->newnode(id, "spinner", IcView->NoId, x, y, 1, 1);
 	view->setargs(n, "", 0, style, 0);
 
 	return view->addchildnode(u.tree, parentid, n);
 }
 
-setspinner(u: ref IcUi->Ui, id: string, frame: int): int
+setspinner(u: ref IcUi->Ui, id: int, frame: int): int
 {
 	n: ref IcView->Node;
 
@@ -976,7 +997,7 @@ setspinner(u: ref IcUi->Ui, id: string, frame: int): int
 	return 0;
 }
 
-tickspinner(u: ref IcUi->Ui, id: string): int
+tickspinner(u: ref IcUi->Ui, id: int): int
 {
 	n: ref IcView->Node;
 
@@ -991,8 +1012,10 @@ tickspinner(u: ref IcUi->Ui, id: string): int
 	return 0;
 }
 
-listbox(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string): int
+listbox(u: ref IcUi->Ui, parentid, id: int, x, y, w, h: int, title: string): int
 {
+	cv: int;
+
 	if(u == nil)
 		return -1;
 
@@ -1001,19 +1024,24 @@ listbox(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, title: string): 
 	if(h < 4)
 		h = 4;
 
+	if(id == IcView->NoId && u.tree != nil)
+		id = view->allocid(u.tree);
+
 	if(window(u, parentid, id, x, y, w, h, title) < 0)
 		return -1;
 
-	if(canvas(u, id, id + ".cv", 1, 1, w - 2, h - 2) < 0)
+	cv = view->allocid(u.tree);
+	if(canvas(u, id, cv, 1, 1, w - 2, h - 2) < 0)
 		return -1;
 
 	return 0;
 }
 
-setlistbox(u: ref IcUi->Ui, id: string, items: array of string, top, sel: int): int
+setlistbox(u: ref IcUi->Ui, id: int, items: array of string, top, sel: int): int
 {
 	n: ref IcView->Node;
-	cv, line, prefix: string;
+	cv: int;
+	line, prefix: string;
 	rows, cols, r, i, count, thumb: int;
 
 	if(u == nil || u.tree == nil || items == nil)
@@ -1023,7 +1051,10 @@ setlistbox(u: ref IcUi->Ui, id: string, items: array of string, top, sel: int): 
 	if(n == nil)
 		return -1;
 
-	cv = id + ".cv";
+	if(view->childcount(n) <= 0)
+		return -1;
+
+	cv = view->childat(n, 0);
 	rows = n.h - 2;
 	cols = n.w - 2;
 
@@ -1075,70 +1106,98 @@ setlistbox(u: ref IcUi->Ui, id: string, items: array of string, top, sel: int): 
 	return 0;
 }
 
-taskdialog(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, title: string): int
+taskdialog(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, title: string): int
 {
+	spin, phaseid, srcid, dstid, itemid, itempctid, itembarrid, totalid, totalpctid, totalbarid, meterlblid, meterid, hintid: int;
+
 	if(u == nil)
 		return -1;
 
 	if(w < 50)
 		w = 50;
 
+	if(id == IcView->NoId && u.tree != nil)
+		id = view->allocid(u.tree);
+
 	if(window(u, parentid, id, x, y, w, 13, title) < 0)
 		return -1;
 
-	if(spinner(u, id, id + ".spin", 2, 1, IcPaint->SpinnerAscii) < 0)
+	spin = view->allocid(u.tree);
+	phaseid = view->allocid(u.tree);
+	srcid = view->allocid(u.tree);
+	dstid = view->allocid(u.tree);
+	itemid = view->allocid(u.tree);
+	itempctid = view->allocid(u.tree);
+	itembarrid = view->allocid(u.tree);
+	totalid = view->allocid(u.tree);
+	totalpctid = view->allocid(u.tree);
+	totalbarid = view->allocid(u.tree);
+	meterlblid = view->allocid(u.tree);
+	meterid = view->allocid(u.tree);
+	hintid = view->allocid(u.tree);
+
+	if(spinner(u, id, spin, 2, 1, IcPaint->SpinnerAscii) < 0)
 		return -1;
 
-	if(label(u, id, id + ".phase", 4, 1, w - 8, "Preparing...") < 0)
+	if(label(u, id, phaseid, 4, 1, w - 8, "Preparing...") < 0)
 		return -1;
 
-	if(label(u, id, id + ".src", 2, 3, w - 6, "from:") < 0)
+	if(label(u, id, srcid, 2, 3, w - 6, "from:") < 0)
 		return -1;
 
-	if(label(u, id, id + ".dst", 2, 4, w - 6, "to:") < 0)
+	if(label(u, id, dstid, 2, 4, w - 6, "to:") < 0)
 		return -1;
 
-	if(label(u, id, id + ".item", 2, 6, w - 20, "item:") < 0)
+	if(label(u, id, itemid, 2, 6, w - 20, "item:") < 0)
 		return -1;
 
-	if(label(u, id, id + ".itempct", w - 16, 6, 6, "0%") < 0)
+	if(label(u, id, itempctid, w - 16, 6, 6, "0%") < 0)
 		return -1;
 
-	if(progress(u, id, id + ".itembar", 2, 7, w - 20, 0, 100) < 0)
+	if(progress(u, id, itembarrid, 2, 7, w - 20, 0, 100) < 0)
 		return -1;
 
-	if(progressstyle(u, id + ".itembar", IcPaint->ProgressPercent) < 0)
+	if(progressstyle(u, itembarrid, IcPaint->ProgressPercent) < 0)
 		return -1;
 
-	if(label(u, id, id + ".total", 2, 9, w - 20, "total:") < 0)
+	if(label(u, id, totalid, 2, 9, w - 20, "total:") < 0)
 		return -1;
 
-	if(label(u, id, id + ".totalpct", w - 16, 9, 6, "0%") < 0)
+	if(label(u, id, totalpctid, w - 16, 9, 6, "0%") < 0)
 		return -1;
 
-	if(progress(u, id, id + ".totalbar", 2, 10, w - 20, 0, 100) < 0)
+	if(progress(u, id, totalbarid, 2, 10, w - 20, 0, 100) < 0)
 		return -1;
 
-	if(progressstyle(u, id + ".totalbar", IcPaint->ProgressTail) < 0)
+	if(progressstyle(u, totalbarid, IcPaint->ProgressTail) < 0)
 		return -1;
 
-	if(label(u, id, id + ".meterlbl", w - 8, 6, 5, "I/O") < 0)
+	if(label(u, id, meterlblid, w - 8, 6, 5, "I/O") < 0)
 		return -1;
 
-	if(vbar(u, id, id + ".meter", w - 7, 7, 4, 0, 100) < 0)
+	if(vbar(u, id, meterid, w - 7, 7, 4, 0, 100) < 0)
 		return -1;
 
-	if(label(u, id, id + ".hint", 2, 11, w - 6, "task dialog") < 0)
+	if(label(u, id, hintid, 2, 11, w - 6, "task dialog") < 0)
 		return -1;
 
 	return 0;
 }
 
-settaskdialog(u: ref IcUi->Ui, id, phase, src, dst, item: string, itemvalue, totalvalue, meter: int): int
+settaskdialog(u: ref IcUi->Ui, id: int, phase, src, dst, item: string, itemvalue, totalvalue, meter: int): int
 {
+	n: ref IcView->Node;
 	itemp, totalp: string;
+	phaseid, srcid, dstid, itemid, itempctid, itembarrid, totalid, totalpctid, totalbarid, meterid: int;
 
-	if(u == nil)
+	if(u == nil || u.tree == nil)
+		return -1;
+
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	if(view->childcount(n) < 10)
 		return -1;
 
 	itemvalue = clamp(itemvalue, 0, 100);
@@ -1148,48 +1207,70 @@ settaskdialog(u: ref IcUi->Ui, id, phase, src, dst, item: string, itemvalue, tot
 	itemp = percenttext(itemvalue, 100);
 	totalp = percenttext(totalvalue, 100);
 
-	if(settext(u, id + ".phase", phase) < 0)
+	phaseid = view->childat(n, 1);
+	srcid = view->childat(n, 2);
+	dstid = view->childat(n, 3);
+	itemid = view->childat(n, 4);
+	itempctid = view->childat(n, 5);
+	itembarrid = view->childat(n, 6);
+	totalid = view->childat(n, 7);
+	totalpctid = view->childat(n, 8);
+	totalbarid = view->childat(n, 9);
+	meterid = view->childat(n, 11);
+
+	if(settext(u, phaseid, phase) < 0)
 		return -1;
 
-	if(settext(u, id + ".src", "from: " + src) < 0)
+	if(settext(u, srcid, "from: " + src) < 0)
 		return -1;
 
-	if(settext(u, id + ".dst", "to:   " + dst) < 0)
+	if(settext(u, dstid, "to:   " + dst) < 0)
 		return -1;
 
-	if(settext(u, id + ".item", "item: " + item) < 0)
+	if(settext(u, itemid, "item: " + item) < 0)
 		return -1;
 
-	if(settext(u, id + ".itempct", itemp) < 0)
+	if(settext(u, itempctid, itemp) < 0)
 		return -1;
 
-	if(settext(u, id + ".total", "total: " + totalp) < 0)
+	if(settext(u, totalid, "total: " + totalp) < 0)
 		return -1;
 
-	if(settext(u, id + ".totalpct", totalp) < 0)
+	if(settext(u, totalpctid, totalp) < 0)
 		return -1;
 
-	if(setprogress(u, id + ".itembar", itemvalue, 100) < 0)
+	if(setprogress(u, itembarrid, itemvalue, 100) < 0)
 		return -1;
 
-	if(setprogress(u, id + ".totalbar", totalvalue, 100) < 0)
+	if(setprogress(u, totalbarid, totalvalue, 100) < 0)
 		return -1;
 
-	if(setbar(u, id + ".meter", meter, 100) < 0)
+	if(setbar(u, meterid, meter, 100) < 0)
 		return -1;
 
 	return 0;
 }
 
-ticktaskdialog(u: ref IcUi->Ui, id: string): int
+ticktaskdialog(u: ref IcUi->Ui, id: int): int
 {
-	if(u == nil)
+	n: ref IcView->Node;
+	spinid: int;
+
+	if(u == nil || u.tree == nil)
 		return -1;
 
-	return tickspinner(u, id + ".spin");
+	n = view->find(u.tree, id);
+	if(n == nil)
+		return -1;
+
+	if(view->childcount(n) <= 0)
+		return -1;
+
+	spinid = view->childat(n, 0);
+	return tickspinner(u, spinid);
 }
 
-bindkey(u: ref IcUi->Ui, key, targetid, command: string): int
+bindkey(u: ref IcUi->Ui, key: string, targetid: int, command: string): int
 {
 	if(u == nil || u.keymap == nil)
 		return -1;
@@ -1197,7 +1278,7 @@ bindkey(u: ref IcUi->Ui, key, targetid, command: string): int
 	return keymap->bind(u.keymap, key, targetid, command);
 }
 
-bindkeyargs(u: ref IcUi->Ui, key, targetid, command, sarg: string, iarg0, iarg1, iarg2: int): int
+bindkeyargs(u: ref IcUi->Ui, key: string, targetid: int, command, sarg: string, iarg0, iarg1, iarg2: int): int
 {
 	if(u == nil || u.keymap == nil)
 		return -1;
@@ -1205,7 +1286,7 @@ bindkeyargs(u: ref IcUi->Ui, key, targetid, command, sarg: string, iarg0, iarg1,
 	return keymap->bindargs(u.keymap, key, targetid, command, sarg, iarg0, iarg1, iarg2);
 }
 
-settext(u: ref IcUi->Ui, id, text: string): int
+settext(u: ref IcUi->Ui, id: int, text: string): int
 {
 	n: ref IcView->Node;
 
@@ -1220,7 +1301,7 @@ settext(u: ref IcUi->Ui, id, text: string): int
 	return 0;
 }
 
-setcontent(u: ref IcUi->Ui, id, content: string): int
+setcontent(u: ref IcUi->Ui, id: int, content: string): int
 {
 	n: ref IcView->Node;
 
@@ -1235,7 +1316,7 @@ setcontent(u: ref IcUi->Ui, id, content: string): int
 	return 0;
 }
 
-setscroll(u: ref IcUi->Ui, id: string, scroll, scrollpos: int): int
+setscroll(u: ref IcUi->Ui, id: int, scroll, scrollpos: int): int
 {
 	n: ref IcView->Node;
 
@@ -1252,7 +1333,7 @@ setscroll(u: ref IcUi->Ui, id: string, scroll, scrollpos: int): int
 	return 0;
 }
 
-setframe(u: ref IcUi->Ui, id: string, frame: int): int
+setframe(u: ref IcUi->Ui, id: int, frame: int): int
 {
 	n: ref IcView->Node;
 
@@ -1267,7 +1348,7 @@ setframe(u: ref IcUi->Ui, id: string, frame: int): int
 	return 0;
 }
 
-setargs(u: ref IcUi->Ui, id, sarg: string, iarg0, iarg1, iarg2: int): int
+setargs(u: ref IcUi->Ui, id: int, sarg: string, iarg0, iarg1, iarg2: int): int
 {
 	n: ref IcView->Node;
 
@@ -1282,7 +1363,7 @@ setargs(u: ref IcUi->Ui, id, sarg: string, iarg0, iarg1, iarg2: int): int
 	return 0;
 }
 
-setfocus(u: ref IcUi->Ui, id: string): int
+setfocus(u: ref IcUi->Ui, id: int): int
 {
 	if(u == nil || u.tree == nil)
 		return -1;
@@ -1290,25 +1371,25 @@ setfocus(u: ref IcUi->Ui, id: string): int
 	return view->setfocus(u.tree, id);
 }
 
-canvasclear(u: ref IcUi->Ui, id, ch, code: string): int
+canvasclear(u: ref IcUi->Ui, id: int, ch, code: string): int
 {
 	u = u;
 	return paint->canvasclear(id, ch, code);
 }
 
-canvasfill(u: ref IcUi->Ui, id: string, x, y, w, h: int, ch, code: string): int
+canvasfill(u: ref IcUi->Ui, id: int, x, y, w, h: int, ch, code: string): int
 {
 	u = u;
 	return paint->canvasfill(id, x, y, w, h, ch, code);
 }
 
-canvasputc(u: ref IcUi->Ui, id: string, x, y: int, ch, code: string): int
+canvasputc(u: ref IcUi->Ui, id: int, x, y: int, ch, code: string): int
 {
 	u = u;
 	return paint->canvasputc(id, x, y, ch, code);
 }
 
-canvasputs(u: ref IcUi->Ui, id: string, x, y: int, text, code: string): int
+canvasputs(u: ref IcUi->Ui, id: int, x, y: int, text, code: string): int
 {
 	u = u;
 	return paint->canvasputs(id, x, y, text, code);
@@ -1365,7 +1446,7 @@ actionok(u: ref IcUi->Ui, n: ref IcView->Node): int
 ensurefocus(u: ref IcUi->Ui): ref IcView->Node
 {
 	n: ref IcView->Node;
-	id: string;
+	id: int;
 
 	if(u == nil || u.tree == nil)
 		return nil;
@@ -1375,7 +1456,7 @@ ensurefocus(u: ref IcUi->Ui): ref IcView->Node
 		return n;
 
 	id = view->nextfocus(u.tree);
-	if(id != ""){
+	if(id != IcView->NoId){
 		view->setfocus(u.tree, id);
 		return view->focusnode(u.tree);
 	}
@@ -1398,12 +1479,13 @@ hotkeymatch(k: int, hotkey: string): int
 	return 0;
 }
 
-findhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
+findhotkeynode(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node
 {
 	n, c, r: ref IcView->Node;
 	i: int;
+	cid: int;
 
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	n = view->find(u.tree, id);
@@ -1414,7 +1496,8 @@ findhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
 		return n;
 
 	for(i = 0; i < len n.children; i++){
-		c = view->find(u.tree, n.children[i]);
+		cid = n.children[i];
+		c = view->find(u.tree, cid);
 		if(c != nil){
 			r = findhotkeynode(u, c.id, k);
 			if(r != nil)
@@ -1436,7 +1519,8 @@ findhotkey(u: ref IcUi->Ui, k: int): ref IcView->Node
 pressnode(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg
 {
 	m: IcMsg->Msg;
-	dst, cmd: string;
+	dst: int;
+	cmd: string;
 
 	if(u == nil || n == nil)
 		return msg->none();
@@ -1444,7 +1528,7 @@ pressnode(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg
 	dst = n.targetid;
 	cmd = n.command;
 
-	if(dst == "")
+	if(dst == IcView->NoId)
 		dst = n.id;
 
 	if(cmd == "")
@@ -1464,7 +1548,7 @@ handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 	n: ref IcView->Node;
 	m: IcMsg->Msg;
 	nav: int;
-	id: string;
+	id: int;
 
 	if(u == nil || u.tree == nil)
 		return msg->none();
@@ -1487,19 +1571,19 @@ handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 
 	if(nav == Icurses->NavNext || nav == Icurses->NavRight || nav == Icurses->NavDown){
 		id = view->nextfocus(u.tree);
-		if(id != ""){
+		if(id != IcView->NoId){
 			view->setfocus(u.tree, id);
-			u.status = "focus " + id;
-			return msg->newmsg("ui", id, IcMsg->KindFocus, "focus.set");
+			u.status = "focus " + sys->sprint("%d", id);
+			return msg->newmsg(IcMsg->MsgNoNode, id, IcMsg->KindFocus, "focus.set");
 		}
 	}
 
 	if(nav == Icurses->NavPrev || nav == Icurses->NavLeft || nav == Icurses->NavUp){
 		id = view->prevfocus(u.tree);
-		if(id != ""){
+		if(id != IcView->NoId){
 			view->setfocus(u.tree, id);
-			u.status = "focus " + id;
-			return msg->newmsg("ui", id, IcMsg->KindFocus, "focus.set");
+			u.status = "focus " + sys->sprint("%d", id);
+			return msg->newmsg(IcMsg->MsgNoNode, id, IcMsg->KindFocus, "focus.set");
 		}
 	}
 
@@ -1524,7 +1608,10 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	n = view->find(u.tree, m.dst);
 
 	if(m.cmd == "button.click"){
-		u.status = "button.click src=" + m.src + " dst=" + m.dst;
+		u.status = "button.click src=" +
+			sys->sprint("%d", m.src) +
+			" dst=" +
+			sys->sprint("%d", m.dst);
 		m.handled = 1;
 		return m;
 	}
@@ -1533,7 +1620,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		if(n != nil){
 			view->show(n);
 			ensurefocus(u);
-			u.status = "node.show dst=" + m.dst;
+			u.status = "node.show dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1543,7 +1630,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		if(n != nil){
 			view->hide(n);
 			ensurefocus(u);
-			u.status = "node.hide dst=" + m.dst;
+			u.status = "node.hide dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1556,7 +1643,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 			else
 				view->show(n);
 			ensurefocus(u);
-			u.status = "node.toggle dst=" + m.dst;
+			u.status = "node.toggle dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1566,7 +1653,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		if(n != nil){
 			view->enable(n);
 			ensurefocus(u);
-			u.status = "node.enable dst=" + m.dst;
+			u.status = "node.enable dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1576,7 +1663,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		if(n != nil){
 			view->disable(n);
 			ensurefocus(u);
-			u.status = "node.disable dst=" + m.dst;
+			u.status = "node.disable dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1585,7 +1672,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "node.move"){
 		if(n != nil){
 			view->moveby(n, m.iarg0, m.iarg1);
-			u.status = "node.move dst=" + m.dst;
+			u.status = "node.move dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1594,7 +1681,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "text.label"){
 		if(n != nil){
 			view->settext(n, m.sarg);
-			u.status = "text.label dst=" + m.dst;
+			u.status = "text.label dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1603,7 +1690,10 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "text.set"){
 		if(n != nil){
 			view->setcontent(n, m.sarg);
-			u.status = "text.set src=" + m.src + " dst=" + m.dst;
+			u.status = "text.set src=" +
+				sys->sprint("%d", m.src) +
+				" dst=" +
+				sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1613,7 +1703,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		if(n != nil){
 			old = view->getcontent(n);
 			view->setcontent(n, old + m.sarg);
-			u.status = "text.append dst=" + m.dst;
+			u.status = "text.append dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1622,7 +1712,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "scroll.down"){
 		if(n != nil){
 			view->setscrollpos(n, n.scrollpos + 1);
-			u.status = "scroll.down dst=" + m.dst;
+			u.status = "scroll.down dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1631,7 +1721,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "scroll.up"){
 		if(n != nil){
 			view->setscrollpos(n, n.scrollpos - 1);
-			u.status = "scroll.up dst=" + m.dst;
+			u.status = "scroll.up dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1640,7 +1730,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "scroll.home"){
 		if(n != nil){
 			view->setscrollpos(n, 0);
-			u.status = "scroll.home dst=" + m.dst;
+			u.status = "scroll.home dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1649,7 +1739,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "scroll.set"){
 		if(n != nil){
 			view->setscrollpos(n, m.iarg0);
-			u.status = "scroll.set dst=" + m.dst;
+			u.status = "scroll.set dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1666,7 +1756,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 				m.iarg0 = m.iarg1;
 
 			view->setargs(n, "", m.iarg0, m.iarg1, n.iarg2);
-			u.status = "bar.set dst=" + m.dst;
+			u.status = "bar.set dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1683,7 +1773,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 				m.iarg0 = m.iarg1;
 
 			view->setargs(n, "", m.iarg0, m.iarg1, n.iarg2);
-			u.status = "progress.set dst=" + m.dst;
+			u.status = "progress.set dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1692,7 +1782,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "progress.style"){
 		if(n != nil){
 			view->setargs(n, n.sarg, n.iarg0, n.iarg1, m.iarg0);
-			u.status = "progress.style dst=" + m.dst;
+			u.status = "progress.style dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1701,7 +1791,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "spinner.tick"){
 		if(n != nil){
 			view->setargs(n, n.sarg, n.iarg0 + 1, n.iarg1, n.iarg2);
-			u.status = "spinner.tick dst=" + m.dst;
+			u.status = "spinner.tick dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1710,7 +1800,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "spinner.set"){
 		if(n != nil){
 			view->setargs(n, n.sarg, m.iarg0, n.iarg1, n.iarg2);
-			u.status = "spinner.set dst=" + m.dst;
+			u.status = "spinner.set dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1719,7 +1809,7 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 	if(m.cmd == "listbox.select"){
 		if(n != nil){
 			view->setargs(n, n.sarg, m.iarg0, m.iarg1, n.iarg2);
-			u.status = "listbox.select dst=" + m.dst;
+			u.status = "listbox.select dst=" + sys->sprint("%d", m.dst);
 			m.handled = 1;
 		}
 		return m;
@@ -1745,6 +1835,9 @@ dispatch(u: ref IcUi->Ui, m: IcMsg->Msg): IcMsg->Msg
 		return m;
 	}
 
-	u.status = "unhandled cmd=" + m.cmd + " dst=" + m.dst;
+	u.status = "unhandled cmd=" +
+		m.cmd +
+		" dst=" +
+		sys->sprint("%d", m.dst);
 	return m;
 }

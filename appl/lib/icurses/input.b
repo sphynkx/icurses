@@ -12,7 +12,7 @@ InputMagic: con 26017;
 DefaultCommand: con "input.submit";
 DefaultWidth: con 32;
 
-findnode: fn(u: ref IcUi->Ui, id: string): ref IcView->Node;
+findnode: fn(u: ref IcUi->Ui, id: int): ref IcView->Node;
 isinput: fn(n: ref IcView->Node): int;
 clamp: fn(v, lo, hi: int): int;
 limittext: fn(s: string, maxlen: int): string;
@@ -27,7 +27,7 @@ setrawcursor: fn(n: ref IcView->Node, cursor: int);
 editmsg: fn(n: ref IcView->Node, cmd: string): IcMsg->Msg;
 submitmsg: fn(n: ref IcView->Node): IcMsg->Msg;
 hotkeymatch: fn(k: int, hotkey: string): int;
-findinputhotkeynode: fn(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node;
+findinputhotkeynode: fn(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node;
 focusedinput: fn(u: ref IcUi->Ui): ref IcView->Node;
 isprintable: fn(k: int): int;
 keychar: fn(k: int): string;
@@ -60,9 +60,9 @@ init()
 	ic->init();
 }
 
-findnode(u: ref IcUi->Ui, id: string): ref IcView->Node
+findnode(u: ref IcUi->Ui, id: int): ref IcView->Node
 {
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	return view->find(u.tree, id);
@@ -266,13 +266,14 @@ editmsg(n: ref IcView->Node, cmd: string): IcMsg->Msg
 submitmsg(n: ref IcView->Node): IcMsg->Msg
 {
 	m: IcMsg->Msg;
-	dst, cmd, s: string;
+	dst: int;
+	cmd, s: string;
 
 	if(n == nil)
 		return msg->none();
 
 	dst = n.targetid;
-	if(dst == "")
+	if(dst == IcView->NoId)
 		dst = n.id;
 
 	cmd = n.command;
@@ -323,12 +324,12 @@ hotkeymatch(k: int, hotkey: string): int
 	return 0;
 }
 
-findinputhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
+findinputhotkeynode(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node
 {
 	n, c, r: ref IcView->Node;
 	i: int;
 
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	n = view->find(u.tree, id);
@@ -394,9 +395,9 @@ keychar(k: int): string
 	return sys->sprint("%c", k);
 }
 
-input(u: ref IcUi->Ui, parentid, id: string,
+input(u: ref IcUi->Ui, parentid, id: int,
 	x, y, w: int,
-	label, hotkey, targetid, command, text: string,
+	label, hotkey: string, targetid: int, command, text: string,
 	maxlen: int): int
 {
 	n: ref IcView->Node;
@@ -426,7 +427,7 @@ input(u: ref IcUi->Ui, parentid, id: string,
 	return 0;
 }
 
-text(u: ref IcUi->Ui, id: string): string
+text(u: ref IcUi->Ui, id: int): string
 {
 	n: ref IcView->Node;
 
@@ -437,7 +438,7 @@ text(u: ref IcUi->Ui, id: string): string
 	return rawtext(n);
 }
 
-settext(u: ref IcUi->Ui, id, text: string): IcMsg->Msg
+settext(u: ref IcUi->Ui, id: int, text: string): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -452,7 +453,7 @@ settext(u: ref IcUi->Ui, id, text: string): IcMsg->Msg
 	return editmsg(n, "input.edit");
 }
 
-setcursor(u: ref IcUi->Ui, id: string, cursor: int): int
+setcursor(u: ref IcUi->Ui, id: int, cursor: int): int
 {
 	n: ref IcView->Node;
 
@@ -464,7 +465,7 @@ setcursor(u: ref IcUi->Ui, id: string, cursor: int): int
 	return 0;
 }
 
-setenabled(u: ref IcUi->Ui, id: string, enabled: int): int
+setenabled(u: ref IcUi->Ui, id: int, enabled: int): int
 {
 	n: ref IcView->Node;
 
@@ -483,7 +484,7 @@ setenabled(u: ref IcUi->Ui, id: string, enabled: int): int
 	return 0;
 }
 
-insert(u: ref IcUi->Ui, id, s: string): IcMsg->Msg
+insert(u: ref IcUi->Ui, id: int, s: string): IcMsg->Msg
 {
 	n: ref IcView->Node;
 	t: string;
@@ -517,7 +518,7 @@ insert(u: ref IcUi->Ui, id, s: string): IcMsg->Msg
 	return editmsg(n, "input.edit");
 }
 
-backspace(u: ref IcUi->Ui, id: string): IcMsg->Msg
+backspace(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 	t: string;
@@ -544,7 +545,7 @@ backspace(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return editmsg(n, "input.edit");
 }
 
-delchar(u: ref IcUi->Ui, id: string): IcMsg->Msg
+delchar(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 	t: string;
@@ -570,7 +571,7 @@ delchar(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return editmsg(n, "input.edit");
 }
 
-submit(u: ref IcUi->Ui, id: string): IcMsg->Msg
+submit(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -598,7 +599,8 @@ activatefocused(u: ref IcUi->Ui): IcMsg->Msg
 handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
-	id: string;
+	id: int;
+	m: IcMsg->Msg;
 
 	if(u == nil || u.tree == nil)
 		return msg->none();
@@ -606,9 +608,9 @@ handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 	n = findinputhotkeynode(u, u.tree.rootid, k);
 	if(n != nil){
 		if(view->setfocus(u.tree, n.id) == 0)
-			u.status = "focus " + n.id;
-		m := msg->newmsg("input", n.id, IcMsg->KindFocus, "focus.set");
-		m.sarg = n.id;
+			u.status = "focus " + sys->sprint("%d", n.id);
+		m = msg->newmsg(IcMsg->MsgNoNode, n.id, IcMsg->KindFocus, "focus.set");
+		m.sarg = sys->sprint("%d", n.id);
 		m.handled = 1;
 		return m;
 	}

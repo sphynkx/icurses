@@ -16,23 +16,28 @@ msg: IcMsg;
 out: ref Sys->FD;
 appscreen: int;
 
-AppLayer: con "layer.app";
+AppTarget: con 1;
+
+AppLayerId: con 10;
+BackgroundId: con 11;
+
+MainShadowId: con 20;
+MainWinId: con 21;
+MainTextId: con 22;
+MainButtonsId: con 23;
+BtnOkId: con 24;
+BtnHelpId: con 25;
+
+HelpLayerId: con 30;
+HelpShadowId: con 31;
+HelpWinId: con 32;
+HelpTextId: con 33;
+BtnHelpOkId: con 34;
+
 AppX: con 10;
 AppY: con 10;
 
-Background: con "canvas.background";
 BgCode: con "0";
-
-MainWin: con "win.main";
-MainText: con "lbl.main";
-MainButtons: con "grp.main.buttons";
-BtnOk: con "btn.ok";
-BtnHelp: con "btn.help";
-
-HelpLayer: con "layer.help";
-HelpWin: con "win.help";
-HelpText: con "lbl.help";
-BtnHelpOk: con "btn.help.ok";
 
 loadmods()
 {
@@ -157,7 +162,7 @@ drawbackground(u: ref IcUi->Ui, w, h, y0, y1: int)
 	y, n, lastrow: int;
 	line: string;
 
-	ui->canvasclear(u, Background, " ", BgCode);
+	ui->canvasclear(u, BackgroundId, " ", BgCode);
 
 	lastrow = h - 1;
 	if(lastrow < 0)
@@ -172,7 +177,7 @@ drawbackground(u: ref IcUi->Ui, w, h, y0, y1: int)
 	n = 0;
 	for(y = y0; y <= y1; y++){
 		line = sampleline(n);
-		ui->canvasputs(u, Background, 1, y, line, BgCode);
+		ui->canvasputs(u, BackgroundId, 1, y, line, BgCode);
 		n++;
 	}
 
@@ -183,10 +188,10 @@ showhelp(u: ref IcUi->Ui)
 {
 	m: IcMsg->Msg;
 
-	m = msg->newmsg("app", HelpLayer, IcMsg->KindCommand, "node.show");
+	m = msg->newmsg(AppTarget, HelpLayerId, IcMsg->KindCommand, "node.show");
 	ui->dispatch(u, m);
 
-	ui->setfocus(u, BtnHelpOk);
+	ui->setfocus(u, BtnHelpOkId);
 	ui->setstatus(u, "Help opened");
 	ui->draw(u);
 }
@@ -195,17 +200,17 @@ hidehelp(u: ref IcUi->Ui)
 {
 	m: IcMsg->Msg;
 
-	m = msg->newmsg("app", HelpLayer, IcMsg->KindCommand, "node.hide");
+	m = msg->newmsg(AppTarget, HelpLayerId, IcMsg->KindCommand, "node.hide");
 	ui->dispatch(u, m);
 
-	ui->setfocus(u, BtnHelp);
+	ui->setfocus(u, BtnHelpId);
 	ui->setstatus(u, "Help closed");
 	ui->draw(u);
 }
 
 build(u: ref IcUi->Ui, sw, sh: int)
 {
-	root: string;
+	root: int;
 	appx, appy, appw, apph: int;
 	mainx, mainy, mainw, mainh: int;
 	helpx, helpy, helpw, helph: int;
@@ -294,30 +299,47 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	ui->setstatusrows(u, sh - 2, sh - 1);
 	ui->sethelp(u, " Enter activates focused button | Tab changes focus | q/Esc exits ");
 
-	ui->group(u, root, AppLayer, appx, appy, appw, apph);
+	if(ui->group(u, root, AppLayerId, appx, appy, appw, apph) < 0)
+		raise "fail:app layer";
 
-	ui->canvas(u, AppLayer, Background, 0, 0, appw, apph);
+	if(ui->canvas(u, AppLayerId, BackgroundId, 0, 0, appw, apph) < 0)
+		raise "fail:background canvas";
 
 	bgy0 = minint(mainy, helpy) - 2;
 	bgy1 = maxint(mainy + mainh, helpy + helph) + 1;
 	drawbackground(u, appw, apph, bgy0, bgy1);
 
-	ui->shadowwindow(u, AppLayer, MainWin, mainx, mainy, mainw, mainh, " Hello ", 1, 1);
-	ui->label(u, MainWin, MainText, 4, 2, 34, "Welcome to Inferno!!");
+	if(ui->shadowwindow(u, AppLayerId, MainShadowId, MainWinId, mainx, mainy, mainw, mainh, " Hello ", 1, 1) < 0)
+		raise "fail:main shadowwindow";
 
-	ui->group(u, MainWin, MainButtons, 8, 5, 28, 1);
-	ui->button(u, MainButtons, BtnOk, 0, 0, 10, 1, "OK", "", "app", "app.ok");
-	ui->button(u, MainButtons, BtnHelp, 14, 0, 10, 1, "Help", "", "app", "app.help");
+	if(ui->label(u, MainWinId, MainTextId, 4, 2, 34, "Welcome to Inferno!!") < 0)
+		raise "fail:main label";
 
-	ui->group(u, AppLayer, HelpLayer, 0, 0, appw, apph);
-	ui->shadowwindow(u, HelpLayer, HelpWin, helpx, helpy, helpw, helph, " Help ", 1, 1);
-	ui->label(u, HelpWin, HelpText, 4, 2, 26, "Welcome to Icurses!!");
-	ui->button(u, HelpWin, BtnHelpOk, 13, 4, 10, 1, "OK", "", "app", "app.help.ok");
+	if(ui->group(u, MainWinId, MainButtonsId, 8, 5, 28, 1) < 0)
+		raise "fail:main buttons group";
 
-	m = msg->newmsg("app", HelpLayer, IcMsg->KindCommand, "node.hide");
+	if(ui->button(u, MainButtonsId, BtnOkId, 0, 0, 10, 1, "OK", "", AppTarget, "app.ok") < 0)
+		raise "fail:ok button";
+
+	if(ui->button(u, MainButtonsId, BtnHelpId, 14, 0, 10, 1, "Help", "", AppTarget, "app.help") < 0)
+		raise "fail:help button";
+
+	if(ui->group(u, AppLayerId, HelpLayerId, 0, 0, appw, apph) < 0)
+		raise "fail:help layer";
+
+	if(ui->shadowwindow(u, HelpLayerId, HelpShadowId, HelpWinId, helpx, helpy, helpw, helph, " Help ", 1, 1) < 0)
+		raise "fail:help shadowwindow";
+
+	if(ui->label(u, HelpWinId, HelpTextId, 4, 2, 26, "Welcome to Icurses!!") < 0)
+		raise "fail:help label";
+
+	if(ui->button(u, HelpWinId, BtnHelpOkId, 13, 4, 10, 1, "OK", "", AppTarget, "app.help.ok") < 0)
+		raise "fail:help ok button";
+
+	m = msg->newmsg(AppTarget, HelpLayerId, IcMsg->KindCommand, "node.hide");
 	ui->dispatch(u, m);
 
-	ui->setfocus(u, BtnOk);
+	ui->setfocus(u, BtnOkId);
 	ui->setstatus(u, "Ready");
 }
 

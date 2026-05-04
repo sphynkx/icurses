@@ -14,7 +14,7 @@ DefaultWidth: con 32;
 DefaultStep: con 1;
 DefaultPageStep: con 10;
 
-findnode: fn(u: ref IcUi->Ui, id: string): ref IcView->Node;
+findnode: fn(u: ref IcUi->Ui, id: int): ref IcView->Node;
 isslider: fn(n: ref IcView->Node): int;
 clamp: fn(v, lo, hi: int): int;
 barwidth: fn(n: ref IcView->Node): int;
@@ -25,7 +25,7 @@ rendernode: fn(n: ref IcView->Node);
 makemsg: fn(n: ref IcView->Node): IcMsg->Msg;
 setrawvalue: fn(n: ref IcView->Node, value: int);
 hotkeymatch: fn(k: int, hotkey: string): int;
-findsliderhotkeynode: fn(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node;
+findsliderhotkeynode: fn(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node;
 focusedslider: fn(u: ref IcUi->Ui): ref IcView->Node;
 
 init()
@@ -56,9 +56,9 @@ init()
 	ic->init();
 }
 
-findnode(u: ref IcUi->Ui, id: string): ref IcView->Node
+findnode(u: ref IcUi->Ui, id: int): ref IcView->Node
 {
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	return view->find(u.tree, id);
@@ -131,7 +131,7 @@ rawlabel(n: ref IcView->Node): string
 	if(s != "")
 		return s;
 
-	return n.id;
+	return sys->sprint("%d", n.id);
 }
 
 rendertext(n: ref IcView->Node): string
@@ -193,13 +193,14 @@ rendernode(n: ref IcView->Node)
 makemsg(n: ref IcView->Node): IcMsg->Msg
 {
 	m: IcMsg->Msg;
-	dst, cmd: string;
+	dst: int;
+	cmd: string;
 
 	if(n == nil)
 		return msg->none();
 
 	dst = n.targetid;
-	if(dst == "")
+	if(dst == IcView->NoId)
 		dst = n.id;
 
 	cmd = n.command;
@@ -259,12 +260,12 @@ hotkeymatch(k: int, hotkey: string): int
 	return 0;
 }
 
-findsliderhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
+findsliderhotkeynode(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node
 {
 	n, c, r: ref IcView->Node;
 	i: int;
 
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	n = view->find(u.tree, id);
@@ -306,9 +307,9 @@ focusedslider(u: ref IcUi->Ui): ref IcView->Node
 	return n;
 }
 
-slider(u: ref IcUi->Ui, parentid, id: string,
+slider(u: ref IcUi->Ui, parentid, id: int,
 	x, y, w: int,
-	label, hotkey, targetid, command: string,
+	label, hotkey: string, targetid: int, command: string,
 	value, min, max: int): int
 {
 	n: ref IcView->Node;
@@ -338,7 +339,7 @@ slider(u: ref IcUi->Ui, parentid, id: string,
 	return 0;
 }
 
-value(u: ref IcUi->Ui, id: string): int
+value(u: ref IcUi->Ui, id: int): int
 {
 	n: ref IcView->Node;
 
@@ -349,7 +350,7 @@ value(u: ref IcUi->Ui, id: string): int
 	return n.iarg0;
 }
 
-setvalue(u: ref IcUi->Ui, id: string, value: int): IcMsg->Msg
+setvalue(u: ref IcUi->Ui, id: int, value: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -364,7 +365,7 @@ setvalue(u: ref IcUi->Ui, id: string, value: int): IcMsg->Msg
 	return makemsg(n);
 }
 
-inc(u: ref IcUi->Ui, id: string): IcMsg->Msg
+inc(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -375,7 +376,7 @@ inc(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return setvalue(u, id, n.iarg0 + DefaultStep);
 }
 
-dec(u: ref IcUi->Ui, id: string): IcMsg->Msg
+dec(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -386,7 +387,7 @@ dec(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return setvalue(u, id, n.iarg0 - DefaultStep);
 }
 
-pageup(u: ref IcUi->Ui, id: string): IcMsg->Msg
+pageup(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -397,7 +398,7 @@ pageup(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return setvalue(u, id, n.iarg0 + DefaultPageStep);
 }
 
-pagedown(u: ref IcUi->Ui, id: string): IcMsg->Msg
+pagedown(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -408,7 +409,7 @@ pagedown(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return setvalue(u, id, n.iarg0 - DefaultPageStep);
 }
 
-home(u: ref IcUi->Ui, id: string): IcMsg->Msg
+home(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -419,7 +420,7 @@ home(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return setvalue(u, id, n.iarg1);
 }
 
-end(u: ref IcUi->Ui, id: string): IcMsg->Msg
+end(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 
@@ -430,7 +431,7 @@ end(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return setvalue(u, id, n.iarg2);
 }
 
-setenabled(u: ref IcUi->Ui, id: string, enabled: int): int
+setenabled(u: ref IcUi->Ui, id: int, enabled: int): int
 {
 	n: ref IcView->Node;
 
@@ -470,7 +471,7 @@ handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 	n = findsliderhotkeynode(u, u.tree.rootid, k);
 	if(n != nil){
 		if(view->setfocus(u.tree, n.id) == 0)
-			u.status = "focus " + n.id;
+			u.status = "focus " + sys->sprint("%d", n.id);
 		return makemsg(n);
 	}
 

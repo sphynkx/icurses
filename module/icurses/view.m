@@ -8,17 +8,20 @@ IcView: module
 
 	FrameDefault: con -1;
 
+	NoId: con -1;
+	RootId: con 0;
+
 	Node: adt
 	{
-		id:         string;
+		id:         int;
 		kind:       string;
-		parentid:   string;
+		parentid:   int;
 
 		text:       string;
 		content:    string;
 
 		hotkey:     string;
-		targetid:   string;
+		targetid:   int;
 		command:    string;
 		sarg:       string;
 		iarg0:      int;
@@ -39,7 +42,7 @@ IcView: module
 		focusable:  int;
 		dirty:      int;
 
-		children:   array of string;
+		children:   array of int;
 	};
 
 	Pos: adt
@@ -50,25 +53,28 @@ IcView: module
 
 	Tree: adt
 	{
-		rootid:         string;
+		rootid:         int;
 		nodes:          array of ref Node;
 
-		focusid:        string;
-		activegroupid:  string;
-		activewindowid: string;
+		focusid:        int;
+		activegroupid:  int;
+		activewindowid: int;
+
+		nextid:         int;
 	};
 
 	init: fn();
 
 	newroot: fn(): ref Node;
-	newnode: fn(id, kind, parentid: string, x, y, w, h: int): ref Node;
+	newnode: fn(id: int, kind: string, parentid: int, x, y, w, h: int): ref Node;
+	allocid: fn(t: ref Tree): int;
 
 	newtree: fn(): ref Tree;
 	root: fn(t: ref Tree): ref Node;
 
-	id: fn(v: ref Node): string;
+	id: fn(v: ref Node): int;
 	kind: fn(v: ref Node): string;
-	parentid: fn(v: ref Node): string;
+	parentid: fn(v: ref Node): int;
 
 	settext: fn(v: ref Node, text: string);
 	gettext: fn(v: ref Node): string;
@@ -79,7 +85,7 @@ IcView: module
 	sethotkey: fn(v: ref Node, hotkey: string);
 	gethotkey: fn(v: ref Node): string;
 
-	setaction: fn(v: ref Node, targetid, command: string);
+	setaction: fn(v: ref Node, targetid: int, command: string);
 	setargs: fn(v: ref Node, sarg: string, iarg0, iarg1, iarg2: int);
 
 	setframe: fn(v: ref Node, frame: int);
@@ -90,7 +96,7 @@ IcView: module
 	setscrollpos: fn(v: ref Node, scrollpos: int);
 	getscrollpos: fn(v: ref Node): int;
 
-	setparent: fn(v: ref Node, parentid: string);
+	setparent: fn(v: ref Node, parentid: int);
 	setbounds: fn(v: ref Node, x, y, w, h: int);
 	moveby: fn(v: ref Node, dx, dy: int);
 
@@ -113,44 +119,44 @@ IcView: module
 	setdirty: fn(v: ref Node, dirty: int);
 	isdirty: fn(v: ref Node): int;
 
-	addchild: fn(v: ref Node, childid: string);
-	removechild: fn(v: ref Node, childid: string);
+	addchild: fn(v: ref Node, childid: int);
+	removechild: fn(v: ref Node, childid: int);
 	childcount: fn(v: ref Node): int;
-	childat: fn(v: ref Node, i: int): string;
-	haschild: fn(v: ref Node, childid: string): int;
+	childat: fn(v: ref Node, i: int): int;
+	haschild: fn(v: ref Node, childid: int): int;
 
-	find: fn(t: ref Tree, id: string): ref Node;
+	find: fn(t: ref Tree, id: int): ref Node;
 	addnode: fn(t: ref Tree, n: ref Node): int;
-	addchildnode: fn(t: ref Tree, parentid: string, n: ref Node): int;
-	reparent: fn(t: ref Tree, id, parentid: string): int;
-	removetree: fn(t: ref Tree, id: string): int;
+	addchildnode: fn(t: ref Tree, parentid: int, n: ref Node): int;
+	reparent: fn(t: ref Tree, id, parentid: int): int;
+	removetree: fn(t: ref Tree, id: int): int;
 
-	bringtofront: fn(t: ref Tree, id: string): int;
-	sendtoback: fn(t: ref Tree, id: string): int;
-	activatewindow: fn(t: ref Tree, id: string): int;
+	bringtofront: fn(t: ref Tree, id: int): int;
+	sendtoback: fn(t: ref Tree, id: int): int;
+	activatewindow: fn(t: ref Tree, id: int): int;
 
 	absx: fn(t: ref Tree, n: ref Node): int;
 	absy: fn(t: ref Tree, n: ref Node): int;
-	abspos: fn(t: ref Tree, id: string): Pos;
+	abspos: fn(t: ref Tree, id: int): Pos;
 
-	isvisibletree: fn(t: ref Tree, id: string): int;
-	isenabledtree: fn(t: ref Tree, id: string): int;
+	isvisibletree: fn(t: ref Tree, id: int): int;
+	isenabledtree: fn(t: ref Tree, id: int): int;
 
-	showtree: fn(t: ref Tree, id: string);
-	hidetree: fn(t: ref Tree, id: string);
-	enabletree: fn(t: ref Tree, id: string);
-	disabletree: fn(t: ref Tree, id: string);
+	showtree: fn(t: ref Tree, id: int);
+	hidetree: fn(t: ref Tree, id: int);
+	enabletree: fn(t: ref Tree, id: int);
+	disabletree: fn(t: ref Tree, id: int);
 
-	movetreeby: fn(t: ref Tree, id: string, dx, dy: int);
+	movetreeby: fn(t: ref Tree, id: int, dx, dy: int);
 
-	subtreecount: fn(t: ref Tree, id: string): int;
+	subtreecount: fn(t: ref Tree, id: int): int;
 
-	setfocus: fn(t: ref Tree, id: string): int;
+	setfocus: fn(t: ref Tree, id: int): int;
 	clearfocus: fn(t: ref Tree);
-	focusid: fn(t: ref Tree): string;
+	focusid: fn(t: ref Tree): int;
 	focusnode: fn(t: ref Tree): ref Node;
-	nextfocus: fn(t: ref Tree): string;
-	prevfocus: fn(t: ref Tree): string;
+	nextfocus: fn(t: ref Tree): int;
+	prevfocus: fn(t: ref Tree): int;
 
 	findhotkey: fn(t: ref Tree, hotkey: string): ref Node;
 };

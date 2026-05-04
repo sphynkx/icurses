@@ -41,7 +41,7 @@ emptyaction(): IcActions->Action
 	it: IcActions->Action;
 
 	it.key = "";
-	it.target = "";
+	it.target = IcMsg->MsgNoNode;
 	it.cmd = "";
 	it.label = "";
 	it.sarg = "";
@@ -111,7 +111,7 @@ samechar(k: int, key: string): int
 	return c == kk;
 }
 
-new(id: string): ref IcActions->Actions
+new(id: int): ref IcActions->Actions
 {
 	a: ref IcActions->Actions;
 
@@ -132,12 +132,12 @@ clear(a: ref IcActions->Actions)
 	a.last = msg->none();
 }
 
-add(a: ref IcActions->Actions, key, target, cmd, label: string): int
+add(a: ref IcActions->Actions, key: string, target: int, cmd, label: string): int
 {
 	return addargs(a, key, target, cmd, label, "", 0, 0, 0);
 }
 
-addargs(a: ref IcActions->Actions, key, target, cmd, label, sarg: string,
+addargs(a: ref IcActions->Actions, key: string, target: int, cmd, label, sarg: string,
 	iarg0, iarg1, iarg2: int): int
 {
 	it: IcActions->Action;
@@ -146,7 +146,7 @@ addargs(a: ref IcActions->Actions, key, target, cmd, label, sarg: string,
 	if(a == nil)
 		return -1;
 
-	if(key == "" || target == "" || cmd == "")
+	if(key == "" || cmd == "")
 		return -1;
 
 	it.key = key;
@@ -266,7 +266,7 @@ message(a: ref IcActions->Actions, index: int): IcMsg->Msg
 {
 	m: IcMsg->Msg;
 	it: IcActions->Action;
-	src: string;
+	src: int;
 
 	if(a == nil || a.items == nil)
 		return msg->none();
@@ -277,8 +277,8 @@ message(a: ref IcActions->Actions, index: int): IcMsg->Msg
 	it = a.items[index];
 
 	src = a.id;
-	if(src == "")
-		src = "actions";
+	if(src == IcMsg->MsgNoNode)
+		src = IcMsg->MsgNoNode;
 
 	m = msg->newmsg(src, it.target, IcMsg->KindCommand, it.cmd);
 	m.sarg = it.sarg;
@@ -394,9 +394,9 @@ summary(m: IcMsg->Msg): string
 	s = "cmd=" +
 		m.cmd +
 		" src=" +
-		m.src +
+		sys->sprint("%d", m.src) +
 		" dst=" +
-		m.dst +
+		sys->sprint("%d", m.dst) +
 		" handled=" +
 		sys->sprint("%d", m.handled);
 

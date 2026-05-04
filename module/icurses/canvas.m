@@ -10,7 +10,7 @@ IcCanvas: module
 
 	Canvas: adt
 	{
-		id:    string;
+		id:    int;
 		w:     int;
 		h:     int;
 		cells: array of Cell;
@@ -18,9 +18,9 @@ IcCanvas: module
 
 	init: fn();
 
-	newcanvas: fn(id: string, w, h: int): ref Canvas;
-	find: fn(id: string): ref Canvas;
-	remove: fn(id: string);
+	newcanvas: fn(id: int, w, h: int): ref Canvas;
+	find: fn(id: int): ref Canvas;
+	remove: fn(id: int);
 
 	clear: fn(c: ref Canvas, ch, code: string);
 	fillrect: fn(c: ref Canvas, x, y, w, h: int, ch, code: string);

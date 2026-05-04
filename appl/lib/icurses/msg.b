@@ -13,8 +13,8 @@ none(): IcMsg->Msg
 {
 	m: IcMsg->Msg;
 
-	m.src = "";
-	m.dst = "";
+	m.src = IcMsg->MsgNoNode;
+	m.dst = IcMsg->MsgNoNode;
 	m.kind = IcMsg->KindNone;
 	m.cmd = "";
 	m.route = IcMsg->RouteDirect;
@@ -29,7 +29,7 @@ none(): IcMsg->Msg
 	return m;
 }
 
-newmsg(src, dst: string, kind: int, cmd: string): IcMsg->Msg
+newmsg(src, dst: int, kind: int, cmd: string): IcMsg->Msg
 {
 	m: IcMsg->Msg;
 

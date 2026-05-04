@@ -56,9 +56,9 @@ IcPaint: module
 	hbar: fn(r: ref Renderer, x, y, w, value, total: int, code: string);
 	vbar: fn(r: ref Renderer, x, y, h, value, total: int, code: string);
 
-	canvasnew: fn(id: string, w, h: int): int;
-	canvasclear: fn(id, ch, code: string): int;
-	canvasfill: fn(id: string, x, y, w, h: int, ch, code: string): int;
-	canvasputc: fn(id: string, x, y: int, ch, code: string): int;
-	canvasputs: fn(id: string, x, y: int, text, code: string): int;
+	canvasnew: fn(id: int, w, h: int): int;
+	canvasclear: fn(id: int, ch, code: string): int;
+	canvasfill: fn(id: int, x, y, w, h: int, ch, code: string): int;
+	canvasputc: fn(id: int, x, y: int, ch, code: string): int;
+	canvasputs: fn(id: int, x, y: int, text, code: string): int;
 };

@@ -60,54 +60,54 @@ IcUi: module
 	readkey: fn(): int;
 	isquit: fn(k: int): int;
 
-	rootid: fn(u: ref Ui): string;
+	rootid: fn(u: ref Ui): int;
 
 	setframestyle: fn(u: ref Ui, style: int);
 	sethelp: fn(u: ref Ui, help: string);
 	setstatus: fn(u: ref Ui, status: string);
 	setstatusrows: fn(u: ref Ui, helprow, statusrow: int);
 
-	node: fn(u: ref Ui, parentid, id, kind: string, x, y, w, h: int): int;
-	group: fn(u: ref Ui, parentid, id: string, x, y, w, h: int): int;
-	label: fn(u: ref Ui, parentid, id: string, x, y, w: int, text: string): int;
-	window: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, title: string): int;
-	shadowwindow: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, title: string, dx, dy: int): int;
-	button: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, label, hotkey, targetid, command: string): int;
-	canvas: fn(u: ref Ui, parentid, id: string, x, y, w, h: int): int;
+	node: fn(u: ref Ui, parentid, id: int, kind: string, x, y, w, h: int): int;
+	group: fn(u: ref Ui, parentid, id: int, x, y, w, h: int): int;
+	label: fn(u: ref Ui, parentid, id: int, x, y, w: int, text: string): int;
+	window: fn(u: ref Ui, parentid, id: int, x, y, w, h: int, title: string): int;
+	shadowwindow: fn(u: ref Ui, parentid, shadowid, id: int, x, y, w, h: int, title: string, dx, dy: int): int;
+	button: fn(u: ref Ui, parentid, id: int, x, y, w, h: int, label, hotkey: string, targetid: int, command: string): int;
+	canvas: fn(u: ref Ui, parentid, id: int, x, y, w, h: int): int;
 
-	hbar: fn(u: ref Ui, parentid, id: string, x, y, w, value, total: int): int;
-	vbar: fn(u: ref Ui, parentid, id: string, x, y, h, value, total: int): int;
-	setbar: fn(u: ref Ui, id: string, value, total: int): int;
+	hbar: fn(u: ref Ui, parentid, id: int, x, y, w, value, total: int): int;
+	vbar: fn(u: ref Ui, parentid, id: int, x, y, h, value, total: int): int;
+	setbar: fn(u: ref Ui, id: int, value, total: int): int;
 
-	progress: fn(u: ref Ui, parentid, id: string, x, y, w, value, total: int): int;
-	setprogress: fn(u: ref Ui, id: string, value, total: int): int;
-	progressstyle: fn(u: ref Ui, id: string, style: int): int;
+	progress: fn(u: ref Ui, parentid, id: int, x, y, w, value, total: int): int;
+	setprogress: fn(u: ref Ui, id: int, value, total: int): int;
+	progressstyle: fn(u: ref Ui, id: int, style: int): int;
 
-	spinner: fn(u: ref Ui, parentid, id: string, x, y, style: int): int;
-	setspinner: fn(u: ref Ui, id: string, frame: int): int;
-	tickspinner: fn(u: ref Ui, id: string): int;
+	spinner: fn(u: ref Ui, parentid, id: int, x, y, style: int): int;
+	setspinner: fn(u: ref Ui, id: int, frame: int): int;
+	tickspinner: fn(u: ref Ui, id: int): int;
 
-	listbox: fn(u: ref Ui, parentid, id: string, x, y, w, h: int, title: string): int;
-	setlistbox: fn(u: ref Ui, id: string, items: array of string, top, sel: int): int;
+	listbox: fn(u: ref Ui, parentid, id: int, x, y, w, h: int, title: string): int;
+	setlistbox: fn(u: ref Ui, id: int, items: array of string, top, sel: int): int;
 
-	taskdialog: fn(u: ref Ui, parentid, id: string, x, y, w: int, title: string): int;
-	settaskdialog: fn(u: ref Ui, id, phase, src, dst, item: string, itemvalue, totalvalue, meter: int): int;
-	ticktaskdialog: fn(u: ref Ui, id: string): int;
+	taskdialog: fn(u: ref Ui, parentid, id: int, x, y, w: int, title: string): int;
+	settaskdialog: fn(u: ref Ui, id: int, phase, src, dst, item: string, itemvalue, totalvalue, meter: int): int;
+	ticktaskdialog: fn(u: ref Ui, id: int): int;
 
-	bindkey: fn(u: ref Ui, key, targetid, command: string): int;
-	bindkeyargs: fn(u: ref Ui, key, targetid, command, sarg: string, iarg0, iarg1, iarg2: int): int;
+	bindkey: fn(u: ref Ui, key: string, targetid: int, command: string): int;
+	bindkeyargs: fn(u: ref Ui, key: string, targetid: int, command, sarg: string, iarg0, iarg1, iarg2: int): int;
 
-	settext: fn(u: ref Ui, id, text: string): int;
-	setcontent: fn(u: ref Ui, id, content: string): int;
-	setscroll: fn(u: ref Ui, id: string, scroll, scrollpos: int): int;
-	setframe: fn(u: ref Ui, id: string, frame: int): int;
-	setargs: fn(u: ref Ui, id, sarg: string, iarg0, iarg1, iarg2: int): int;
-	setfocus: fn(u: ref Ui, id: string): int;
+	settext: fn(u: ref Ui, id: int, text: string): int;
+	setcontent: fn(u: ref Ui, id: int, content: string): int;
+	setscroll: fn(u: ref Ui, id: int, scroll, scrollpos: int): int;
+	setframe: fn(u: ref Ui, id: int, frame: int): int;
+	setargs: fn(u: ref Ui, id: int, sarg: string, iarg0, iarg1, iarg2: int): int;
+	setfocus: fn(u: ref Ui, id: int): int;
 
-	canvasclear: fn(u: ref Ui, id, ch, code: string): int;
-	canvasfill: fn(u: ref Ui, id: string, x, y, w, h: int, ch, code: string): int;
-	canvasputc: fn(u: ref Ui, id: string, x, y: int, ch, code: string): int;
-	canvasputs: fn(u: ref Ui, id: string, x, y: int, text, code: string): int;
+	canvasclear: fn(u: ref Ui, id: int, ch, code: string): int;
+	canvasfill: fn(u: ref Ui, id: int, x, y, w, h: int, ch, code: string): int;
+	canvasputc: fn(u: ref Ui, id: int, x, y: int, ch, code: string): int;
+	canvasputs: fn(u: ref Ui, id: int, x, y: int, text, code: string): int;
 
 	draw: fn(u: ref Ui);
 

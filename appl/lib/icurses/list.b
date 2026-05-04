@@ -15,9 +15,8 @@ makemsg: fn(l: ref IcList->List, cmd: string): IcMsg->Msg;
 spaces: fn(n: int): string;
 clip: fn(s: string, w: int): string;
 padright: fn(s: string, w: int): string;
-rowid: fn(l: ref IcList->List, row: int): string;
 rowtext: fn(l: ref IcList->List, index, w: int): string;
-ensurelabel: fn(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): int;
+ensurelabel: fn(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, text: string): int;
 
 init()
 {
@@ -96,14 +95,6 @@ padright(s: string, w: int): string
 	return s + spaces(w - len s);
 }
 
-rowid(l: ref IcList->List, row: int): string
-{
-	if(l == nil)
-		return "";
-
-	return l.id + ".iclist.row." + sys->sprint("%d", row);
-}
-
 rowtext(l: ref IcList->List, index, w: int): string
 {
 	s, prefix: string;
@@ -121,11 +112,11 @@ rowtext(l: ref IcList->List, index, w: int): string
 	return padright(clip(s, w), w);
 }
 
-ensurelabel(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): int
+ensurelabel(u: ref IcUi->Ui, parentid, id: int, x, y, w: int, text: string): int
 {
 	n: ref IcView->Node;
 
-	if(u == nil || u.tree == nil || parentid == "" || id == "")
+	if(u == nil || u.tree == nil || parentid < 0 || id < 0)
 		return -1;
 
 	if(w <= 0)
@@ -142,7 +133,7 @@ ensurelabel(u: ref IcUi->Ui, parentid, id: string, x, y, w: int, text: string): 
 	return 0;
 }
 
-new(id: string, rows: int): ref IcList->List
+new(id: int, rows: int): ref IcList->List
 {
 	l: ref IcList->List;
 
@@ -290,10 +281,10 @@ fix(l: ref IcList->List)
 render(u: ref IcUi->Ui, l: ref IcList->List): int
 {
 	n: ref IcView->Node;
-	innerw, innerh, rows, r, index: int;
-	id, s: string;
+	innerw, innerh, rows, r, index, id: int;
+	s: string;
 
-	if(u == nil || u.tree == nil || l == nil || l.id == "")
+	if(u == nil || u.tree == nil || l == nil || l.id < 0)
 		return -1;
 
 	fix(l);
@@ -323,7 +314,11 @@ render(u: ref IcUi->Ui, l: ref IcList->List): int
 
 	for(r = 0; r < rows; r++){
 		index = l.top + r;
-		id = rowid(l, r);
+
+		if(r >= view->childcount(n))
+			return -1;
+
+		id = view->childat(n, r);
 		s = rowtext(l, index, innerw);
 
 		if(ensurelabel(u, l.id, id, 1, 1 + r, innerw, s) < 0)
@@ -335,7 +330,10 @@ render(u: ref IcUi->Ui, l: ref IcList->List): int
 	# when the list shrinks or when rows < innerh.
 	#
 	for(; r < innerh; r++){
-		id = rowid(l, r);
+		if(r >= view->childcount(n))
+			return -1;
+
+		id = view->childat(n, r);
 		s = spaces(innerw);
 
 		if(ensurelabel(u, l.id, id, 1, 1 + r, innerw, s) < 0)

@@ -2,68 +2,68 @@ implement IcView;
 
 include "icurses/view.m";
 
-appendchild: fn(a: array of string, s: string): array of string;
-prependchild: fn(a: array of string, s: string): array of string;
-removechildid: fn(a: array of string, s: string): array of string;
+appendchild: fn(a: array of int, s: int): array of int;
+prependchild: fn(a: array of int, s: int): array of int;
+removechildid: fn(a: array of int, s: int): array of int;
 
 appendnode: fn(a: array of ref IcView->Node, n: ref IcView->Node): array of ref IcView->Node;
-removenodeid: fn(a: array of ref IcView->Node, id: string): array of ref IcView->Node;
+removenodeid: fn(a: array of ref IcView->Node, id: int): array of ref IcView->Node;
 
-showhidekids: fn(t: ref IcView->Tree, id: string, visible: int);
-enablekids: fn(t: ref IcView->Tree, id: string, enabled: int);
-countkids: fn(t: ref IcView->Tree, id: string): int;
+showhidekids: fn(t: ref IcView->Tree, id: int, visible: int);
+enablekids: fn(t: ref IcView->Tree, id: int, enabled: int);
+countkids: fn(t: ref IcView->Tree, id: int): int;
 dropnode: fn(t: ref IcView->Tree, n: ref IcView->Node);
 
-isdescendant: fn(t: ref IcView->Tree, id, ancestorid: string): int;
+isdescendant: fn(t: ref IcView->Tree, id, ancestorid: int): int;
 
-collectfocus: fn(t: ref IcView->Tree, id: string, a: array of string): array of string;
+collectfocus: fn(t: ref IcView->Tree, id: int, a: array of int): array of int;
 focusableok: fn(t: ref IcView->Tree, n: ref IcView->Node): int;
-focuslist: fn(t: ref IcView->Tree): array of string;
+focuslist: fn(t: ref IcView->Tree): array of int;
 
-findhotkeynode: fn(t: ref IcView->Tree, id, hotkey: string): ref IcView->Node;
+findhotkeynode: fn(t: ref IcView->Tree, id: int, hotkey: string): ref IcView->Node;
 
 init()
 {
 }
 
-appendchild(a: array of string, s: string): array of string
+appendchild(a: array of int, s: int): array of int
 {
 	n, i: int;
-	b: array of string;
+	b: array of int;
 
-	if(s == "")
+	if(s < 0)
 		return a;
 
 	if(a == nil){
-		b = array[1] of string;
+		b = array[1] of int;
 		b[0] = s;
 		return b;
 	}
 
 	n = len a;
-	b = array[n + 1] of string;
+	b = array[n + 1] of int;
 	for(i = 0; i < n; i++)
 		b[i] = a[i];
 	b[n] = s;
 	return b;
 }
 
-prependchild(a: array of string, s: string): array of string
+prependchild(a: array of int, s: int): array of int
 {
 	n, i: int;
-	b: array of string;
+	b: array of int;
 
-	if(s == "")
+	if(s < 0)
 		return a;
 
 	if(a == nil){
-		b = array[1] of string;
+		b = array[1] of int;
 		b[0] = s;
 		return b;
 	}
 
 	n = len a;
-	b = array[n + 1] of string;
+	b = array[n + 1] of int;
 	b[0] = s;
 	for(i = 0; i < n; i++)
 		b[i + 1] = a[i];
@@ -71,10 +71,10 @@ prependchild(a: array of string, s: string): array of string
 	return b;
 }
 
-removechildid(a: array of string, s: string): array of string
+removechildid(a: array of int, s: int): array of int
 {
 	i, n, k: int;
-	b: array of string;
+	b: array of int;
 
 	if(a == nil)
 		return nil;
@@ -88,9 +88,9 @@ removechildid(a: array of string, s: string): array of string
 		return a;
 
 	if(n == 0)
-		return array[0] of string;
+		return array[0] of int;
 
-	b = array[n] of string;
+	b = array[n] of int;
 	k = 0;
 	for(i = 0; i < len a; i++){
 		if(a[i] == s)
@@ -120,12 +120,12 @@ appendnode(a: array of ref IcView->Node, n: ref IcView->Node): array of ref IcVi
 	return b;
 }
 
-removenodeid(a: array of ref IcView->Node, id: string): array of ref IcView->Node
+removenodeid(a: array of ref IcView->Node, id: int): array of ref IcView->Node
 {
 	i, n, k: int;
 	b: array of ref IcView->Node;
 
-	if(a == nil || id == "")
+	if(a == nil || id < 0)
 		return a;
 
 	n = 0;
@@ -158,13 +158,13 @@ newroot(): ref IcView->Node
 	v: ref IcView->Node;
 
 	v = ref IcView->Node;
-	v.id = "root";
+	v.id = IcView->RootId;
 	v.kind = "root";
-	v.parentid = "";
+	v.parentid = IcView->NoId;
 	v.text = "";
 	v.content = "";
 	v.hotkey = "";
-	v.targetid = "";
+	v.targetid = IcView->NoId;
 	v.command = "";
 	v.sarg = "";
 	v.iarg0 = 0;
@@ -181,11 +181,11 @@ newroot(): ref IcView->Node
 	v.enabled = 1;
 	v.focusable = 0;
 	v.dirty = 0;
-	v.children = array[0] of string;
+	v.children = array[0] of int;
 	return v;
 }
 
-newnode(id, kind, parentid: string, x, y, w, h: int): ref IcView->Node
+newnode(id: int, kind: string, parentid: int, x, y, w, h: int): ref IcView->Node
 {
 	v: ref IcView->Node;
 
@@ -196,7 +196,7 @@ newnode(id, kind, parentid: string, x, y, w, h: int): ref IcView->Node
 	v.text = "";
 	v.content = "";
 	v.hotkey = "";
-	v.targetid = "";
+	v.targetid = IcView->NoId;
 	v.command = "";
 	v.sarg = "";
 	v.iarg0 = 0;
@@ -213,8 +213,23 @@ newnode(id, kind, parentid: string, x, y, w, h: int): ref IcView->Node
 	v.enabled = 1;
 	v.focusable = 0;
 	v.dirty = 0;
-	v.children = array[0] of string;
+	v.children = array[0] of int;
 	return v;
+}
+
+allocid(t: ref IcView->Tree): int
+{
+	id: int;
+
+	if(t == nil)
+		return IcView->NoId;
+
+	id = t.nextid;
+	if(id <= IcView->RootId)
+		id = IcView->RootId + 1;
+
+	t.nextid = id + 1;
+	return id;
 }
 
 newtree(): ref IcView->Tree
@@ -229,9 +244,10 @@ newtree(): ref IcView->Tree
 	t.nodes = array[1] of ref IcView->Node;
 	t.nodes[0] = r;
 
-	t.focusid = "";
-	t.activegroupid = "";
-	t.activewindowid = "";
+	t.focusid = IcView->NoId;
+	t.activegroupid = IcView->NoId;
+	t.activewindowid = IcView->NoId;
+	t.nextid = IcView->RootId + 1;
 
 	return t;
 }
@@ -243,10 +259,10 @@ root(t: ref IcView->Tree): ref IcView->Node
 	return find(t, t.rootid);
 }
 
-id(v: ref IcView->Node): string
+id(v: ref IcView->Node): int
 {
 	if(v == nil)
-		return "";
+		return IcView->NoId;
 	return v.id;
 }
 
@@ -257,10 +273,10 @@ kind(v: ref IcView->Node): string
 	return v.kind;
 }
 
-parentid(v: ref IcView->Node): string
+parentid(v: ref IcView->Node): int
 {
 	if(v == nil)
-		return "";
+		return IcView->NoId;
 	return v.parentid;
 }
 
@@ -308,7 +324,7 @@ gethotkey(v: ref IcView->Node): string
 	return v.hotkey;
 }
 
-setaction(v: ref IcView->Node, targetid, command: string)
+setaction(v: ref IcView->Node, targetid: int, command: string)
 {
 	if(v == nil)
 		return;
@@ -373,7 +389,7 @@ getscrollpos(v: ref IcView->Node): int
 	return v.scrollpos;
 }
 
-setparent(v: ref IcView->Node, parentid: string)
+setparent(v: ref IcView->Node, parentid: int)
 {
 	if(v == nil)
 		return;
@@ -504,11 +520,11 @@ isdirty(v: ref IcView->Node): int
 	return v.dirty;
 }
 
-addchild(v: ref IcView->Node, childid: string)
+addchild(v: ref IcView->Node, childid: int)
 {
 	if(v == nil)
 		return;
-	if(childid == "")
+	if(childid < 0)
 		return;
 	if(haschild(v, childid))
 		return;
@@ -516,11 +532,11 @@ addchild(v: ref IcView->Node, childid: string)
 	v.dirty = 1;
 }
 
-removechild(v: ref IcView->Node, childid: string)
+removechild(v: ref IcView->Node, childid: int)
 {
 	if(v == nil)
 		return;
-	if(childid == "")
+	if(childid < 0)
 		return;
 	v.children = removechildid(v.children, childid);
 	v.dirty = 1;
@@ -533,16 +549,16 @@ childcount(v: ref IcView->Node): int
 	return len v.children;
 }
 
-childat(v: ref IcView->Node, i: int): string
+childat(v: ref IcView->Node, i: int): int
 {
 	if(v == nil || v.children == nil)
-		return "";
+		return IcView->NoId;
 	if(i < 0 || i >= len v.children)
-		return "";
+		return IcView->NoId;
 	return v.children[i];
 }
 
-haschild(v: ref IcView->Node, childid: string): int
+haschild(v: ref IcView->Node, childid: int): int
 {
 	i: int;
 
@@ -556,11 +572,11 @@ haschild(v: ref IcView->Node, childid: string): int
 	return 0;
 }
 
-find(t: ref IcView->Tree, id: string): ref IcView->Node
+find(t: ref IcView->Tree, id: int): ref IcView->Node
 {
 	i: int;
 
-	if(t == nil || id == "" || t.nodes == nil)
+	if(t == nil || id < 0 || t.nodes == nil)
 		return nil;
 
 	for(i = 0; i < len t.nodes; i++){
@@ -572,27 +588,31 @@ find(t: ref IcView->Tree, id: string): ref IcView->Node
 
 addnode(t: ref IcView->Tree, n: ref IcView->Node): int
 {
-	if(t == nil || n == nil || n.id == "")
+	if(t == nil || n == nil || n.id < 0)
 		return -1;
 
 	if(find(t, n.id) != nil)
 		return -1;
 
 	if(n.children == nil)
-		n.children = array[0] of string;
+		n.children = array[0] of int;
 
 	t.nodes = appendnode(t.nodes, n);
+
+	if(n.id >= t.nextid)
+		t.nextid = n.id + 1;
+
 	return 0;
 }
 
-addchildnode(t: ref IcView->Tree, parentid: string, n: ref IcView->Node): int
+addchildnode(t: ref IcView->Tree, parentid: int, n: ref IcView->Node): int
 {
 	p: ref IcView->Node;
 
-	if(t == nil || n == nil || parentid == "")
+	if(t == nil || n == nil || parentid < 0)
 		return -1;
 
-	if(n.id == "")
+	if(n.id < 0)
 		return -1;
 
 	if(find(t, n.id) != nil)
@@ -604,20 +624,23 @@ addchildnode(t: ref IcView->Tree, parentid: string, n: ref IcView->Node): int
 
 	n.parentid = parentid;
 	if(n.children == nil)
-		n.children = array[0] of string;
+		n.children = array[0] of int;
 
 	t.nodes = appendnode(t.nodes, n);
 	addchild(p, n.id);
 
+	if(n.id >= t.nextid)
+		t.nextid = n.id + 1;
+
 	return 0;
 }
 
-isdescendant(t: ref IcView->Tree, id, ancestorid: string): int
+isdescendant(t: ref IcView->Tree, id, ancestorid: int): int
 {
 	n: ref IcView->Node;
 	guard, limit: int;
 
-	if(t == nil || id == "" || ancestorid == "")
+	if(t == nil || id < 0 || ancestorid < 0)
 		return 0;
 
 	n = find(t, id);
@@ -632,7 +655,7 @@ isdescendant(t: ref IcView->Tree, id, ancestorid: string): int
 	while(n != nil && guard < limit){
 		if(n.parentid == ancestorid)
 			return 1;
-		if(n.parentid == "")
+		if(n.parentid == IcView->NoId)
 			return 0;
 		n = find(t, n.parentid);
 		guard++;
@@ -641,11 +664,11 @@ isdescendant(t: ref IcView->Tree, id, ancestorid: string): int
 	return 0;
 }
 
-reparent(t: ref IcView->Tree, id, parentid: string): int
+reparent(t: ref IcView->Tree, id, parentid: int): int
 {
 	n, oldp, newp: ref IcView->Node;
 
-	if(t == nil || id == "" || parentid == "")
+	if(t == nil || id < 0 || parentid < 0)
 		return -1;
 
 	if(id == t.rootid)
@@ -681,7 +704,7 @@ reparent(t: ref IcView->Tree, id, parentid: string): int
 dropnode(t: ref IcView->Tree, n: ref IcView->Node)
 {
 	i: int;
-	cid: string;
+	cid: int;
 	c: ref IcView->Node;
 
 	if(t == nil || n == nil)
@@ -696,11 +719,11 @@ dropnode(t: ref IcView->Tree, n: ref IcView->Node)
 	t.nodes = removenodeid(t.nodes, n.id);
 }
 
-removetree(t: ref IcView->Tree, id: string): int
+removetree(t: ref IcView->Tree, id: int): int
 {
 	n, p: ref IcView->Node;
 
-	if(t == nil || id == "")
+	if(t == nil || id < 0)
 		return -1;
 
 	if(id == t.rootid)
@@ -715,18 +738,18 @@ removetree(t: ref IcView->Tree, id: string): int
 		removechild(p, id);
 
 	if(t.focusid == id || isdescendant(t, t.focusid, id))
-		t.focusid = "";
+		t.focusid = IcView->NoId;
 	if(t.activegroupid == id || isdescendant(t, t.activegroupid, id))
-		t.activegroupid = "";
+		t.activegroupid = IcView->NoId;
 	if(t.activewindowid == id || isdescendant(t, t.activewindowid, id))
-		t.activewindowid = "";
+		t.activewindowid = IcView->NoId;
 
 	dropnode(t, n);
 
 	return 0;
 }
 
-bringtofront(t: ref IcView->Tree, id: string): int
+bringtofront(t: ref IcView->Tree, id: int): int
 {
 	n, p: ref IcView->Node;
 
@@ -746,7 +769,7 @@ bringtofront(t: ref IcView->Tree, id: string): int
 	return 0;
 }
 
-sendtoback(t: ref IcView->Tree, id: string): int
+sendtoback(t: ref IcView->Tree, id: int): int
 {
 	n, p: ref IcView->Node;
 
@@ -766,11 +789,11 @@ sendtoback(t: ref IcView->Tree, id: string): int
 	return 0;
 }
 
-activatewindow(t: ref IcView->Tree, id: string): int
+activatewindow(t: ref IcView->Tree, id: int): int
 {
 	n: ref IcView->Node;
 
-	if(t == nil || id == "")
+	if(t == nil || id < 0)
 		return -1;
 
 	n = find(t, id);
@@ -831,7 +854,7 @@ absy(t: ref IcView->Tree, n: ref IcView->Node): int
 	return ay;
 }
 
-abspos(t: ref IcView->Tree, id: string): IcView->Pos
+abspos(t: ref IcView->Tree, id: int): IcView->Pos
 {
 	pos: IcView->Pos;
 	n: ref IcView->Node;
@@ -849,12 +872,12 @@ abspos(t: ref IcView->Tree, id: string): IcView->Pos
 	return pos;
 }
 
-isvisibletree(t: ref IcView->Tree, id: string): int
+isvisibletree(t: ref IcView->Tree, id: int): int
 {
 	n: ref IcView->Node;
 	guard, limit: int;
 
-	if(t == nil || id == "")
+	if(t == nil || id < 0)
 		return 0;
 
 	n = find(t, id);
@@ -869,7 +892,7 @@ isvisibletree(t: ref IcView->Tree, id: string): int
 	while(n != nil && guard < limit){
 		if(!n.visible)
 			return 0;
-		if(n.parentid == "")
+		if(n.parentid == IcView->NoId)
 			return 1;
 		n = find(t, n.parentid);
 		guard++;
@@ -878,12 +901,12 @@ isvisibletree(t: ref IcView->Tree, id: string): int
 	return 0;
 }
 
-isenabledtree(t: ref IcView->Tree, id: string): int
+isenabledtree(t: ref IcView->Tree, id: int): int
 {
 	n: ref IcView->Node;
 	guard, limit: int;
 
-	if(t == nil || id == "")
+	if(t == nil || id < 0)
 		return 0;
 
 	n = find(t, id);
@@ -898,7 +921,7 @@ isenabledtree(t: ref IcView->Tree, id: string): int
 	while(n != nil && guard < limit){
 		if(!n.enabled)
 			return 0;
-		if(n.parentid == "")
+		if(n.parentid == IcView->NoId)
 			return 1;
 		n = find(t, n.parentid);
 		guard++;
@@ -907,11 +930,11 @@ isenabledtree(t: ref IcView->Tree, id: string): int
 	return 0;
 }
 
-showhidekids(t: ref IcView->Tree, id: string, visible: int)
+showhidekids(t: ref IcView->Tree, id: int, visible: int)
 {
 	n: ref IcView->Node;
 	i: int;
-	cid: string;
+	cid: int;
 
 	n = find(t, id);
 	if(n == nil)
@@ -926,11 +949,11 @@ showhidekids(t: ref IcView->Tree, id: string, visible: int)
 	}
 }
 
-enablekids(t: ref IcView->Tree, id: string, enabled: int)
+enablekids(t: ref IcView->Tree, id: int, enabled: int)
 {
 	n: ref IcView->Node;
 	i: int;
-	cid: string;
+	cid: int;
 
 	n = find(t, id);
 	if(n == nil)
@@ -945,27 +968,27 @@ enablekids(t: ref IcView->Tree, id: string, enabled: int)
 	}
 }
 
-showtree(t: ref IcView->Tree, id: string)
+showtree(t: ref IcView->Tree, id: int)
 {
 	showhidekids(t, id, 1);
 }
 
-hidetree(t: ref IcView->Tree, id: string)
+hidetree(t: ref IcView->Tree, id: int)
 {
 	showhidekids(t, id, 0);
 }
 
-enabletree(t: ref IcView->Tree, id: string)
+enabletree(t: ref IcView->Tree, id: int)
 {
 	enablekids(t, id, 1);
 }
 
-disabletree(t: ref IcView->Tree, id: string)
+disabletree(t: ref IcView->Tree, id: int)
 {
 	enablekids(t, id, 0);
 }
 
-movetreeby(t: ref IcView->Tree, id: string, dx, dy: int)
+movetreeby(t: ref IcView->Tree, id: int, dx, dy: int)
 {
 	n: ref IcView->Node;
 
@@ -976,7 +999,7 @@ movetreeby(t: ref IcView->Tree, id: string, dx, dy: int)
 	moveby(n, dx, dy);
 }
 
-countkids(t: ref IcView->Tree, id: string): int
+countkids(t: ref IcView->Tree, id: int): int
 {
 	n: ref IcView->Node;
 	i, total: int;
@@ -992,7 +1015,7 @@ countkids(t: ref IcView->Tree, id: string): int
 	return total;
 }
 
-subtreecount(t: ref IcView->Tree, id: string): int
+subtreecount(t: ref IcView->Tree, id: int): int
 {
 	return countkids(t, id);
 }
@@ -1014,7 +1037,7 @@ focusableok(t: ref IcView->Tree, n: ref IcView->Node): int
 	return 1;
 }
 
-collectfocus(t: ref IcView->Tree, id: string, a: array of string): array of string
+collectfocus(t: ref IcView->Tree, id: int, a: array of int): array of int
 {
 	n, c: ref IcView->Node;
 	i: int;
@@ -1035,15 +1058,15 @@ collectfocus(t: ref IcView->Tree, id: string, a: array of string): array of stri
 	return a;
 }
 
-focuslist(t: ref IcView->Tree): array of string
+focuslist(t: ref IcView->Tree): array of int
 {
 	if(t == nil)
-		return array[0] of string;
+		return array[0] of int;
 
-	return collectfocus(t, t.rootid, array[0] of string);
+	return collectfocus(t, t.rootid, array[0] of int);
 }
 
-setfocus(t: ref IcView->Tree, id: string): int
+setfocus(t: ref IcView->Tree, id: int): int
 {
 	n: ref IcView->Node;
 
@@ -1072,13 +1095,13 @@ clearfocus(t: ref IcView->Tree)
 {
 	if(t == nil)
 		return;
-	t.focusid = "";
+	t.focusid = IcView->NoId;
 }
 
-focusid(t: ref IcView->Tree): string
+focusid(t: ref IcView->Tree): int
 {
 	if(t == nil)
-		return "";
+		return IcView->NoId;
 	return t.focusid;
 }
 
@@ -1089,18 +1112,18 @@ focusnode(t: ref IcView->Tree): ref IcView->Node
 	return find(t, t.focusid);
 }
 
-nextfocus(t: ref IcView->Tree): string
+nextfocus(t: ref IcView->Tree): int
 {
-	a: array of string;
+	a: array of int;
 	i, n, cur: int;
 
 	if(t == nil)
-		return "";
+		return IcView->NoId;
 
 	a = focuslist(t);
 	if(a == nil || len a == 0){
-		t.focusid = "";
-		return "";
+		t.focusid = IcView->NoId;
+		return IcView->NoId;
 	}
 
 	n = len a;
@@ -1121,18 +1144,18 @@ nextfocus(t: ref IcView->Tree): string
 	return t.focusid;
 }
 
-prevfocus(t: ref IcView->Tree): string
+prevfocus(t: ref IcView->Tree): int
 {
-	a: array of string;
+	a: array of int;
 	i, n, cur: int;
 
 	if(t == nil)
-		return "";
+		return IcView->NoId;
 
 	a = focuslist(t);
 	if(a == nil || len a == 0){
-		t.focusid = "";
-		return "";
+		t.focusid = IcView->NoId;
+		return IcView->NoId;
 	}
 
 	n = len a;
@@ -1155,7 +1178,7 @@ prevfocus(t: ref IcView->Tree): string
 	return t.focusid;
 }
 
-findhotkeynode(t: ref IcView->Tree, id, hotkey: string): ref IcView->Node
+findhotkeynode(t: ref IcView->Tree, id: int, hotkey: string): ref IcView->Node
 {
 	n, r: ref IcView->Node;
 	i: int;

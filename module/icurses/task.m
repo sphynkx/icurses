@@ -6,7 +6,7 @@ IcTask: module
 
 	Task: adt
 	{
-		id: string;
+		id: int;
 
 		phase: string;
 		src: string;
@@ -22,7 +22,7 @@ IcTask: module
 
 	init: fn();
 
-	new: fn(id: string): ref Task;
+	new: fn(id: int): ref Task;
 	reset: fn(t: ref Task);
 
 	setphase: fn(t: ref Task, phase: string): int;

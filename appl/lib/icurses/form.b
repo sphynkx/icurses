@@ -8,8 +8,8 @@ IcControl: module
 
 	init: fn();
 
-	checked: fn(u: ref IcUi->Ui, id: string): int;
-	selected: fn(u: ref IcUi->Ui, groupid: string): string;
+	checked: fn(u: ref IcUi->Ui, id: int): int;
+	selected: fn(u: ref IcUi->Ui, groupid: int): int;
 };
 
 IcSlider: module
@@ -18,7 +18,7 @@ IcSlider: module
 
 	init: fn();
 
-	value: fn(u: ref IcUi->Ui, id: string): int;
+	value: fn(u: ref IcUi->Ui, id: int): int;
 };
 
 sys: Sys;
@@ -91,7 +91,7 @@ findkey(f: ref IcForm->Form, key: string): int
 	return -1;
 }
 
-new(id: string): ref IcForm->Form
+new(id: int): ref IcForm->Form
 {
 	f: ref IcForm->Form;
 
@@ -110,11 +110,11 @@ clear(f: ref IcForm->Form)
 	f.fields = array[0] of IcForm->Field;
 }
 
-addinput(f: ref IcForm->Form, id, key: string): int
+addinput(f: ref IcForm->Form, id: int, key: string): int
 {
 	field: IcForm->Field;
 
-	if(f == nil || id == "" || key == "")
+	if(f == nil || id < 0 || key == "")
 		return -1;
 
 	field.kind = IcForm->KindInput;
@@ -126,11 +126,11 @@ addinput(f: ref IcForm->Form, id, key: string): int
 	return 0;
 }
 
-addcheckbox(f: ref IcForm->Form, id, key: string): int
+addcheckbox(f: ref IcForm->Form, id: int, key: string): int
 {
 	field: IcForm->Field;
 
-	if(f == nil || id == "" || key == "")
+	if(f == nil || id < 0 || key == "")
 		return -1;
 
 	field.kind = IcForm->KindCheckbox;
@@ -142,11 +142,11 @@ addcheckbox(f: ref IcForm->Form, id, key: string): int
 	return 0;
 }
 
-addradiogroup(f: ref IcForm->Form, id, key: string): int
+addradiogroup(f: ref IcForm->Form, id: int, key: string): int
 {
 	field: IcForm->Field;
 
-	if(f == nil || id == "" || key == "")
+	if(f == nil || id < 0 || key == "")
 		return -1;
 
 	field.kind = IcForm->KindRadioGroup;
@@ -158,11 +158,11 @@ addradiogroup(f: ref IcForm->Form, id, key: string): int
 	return 0;
 }
 
-addslider(f: ref IcForm->Form, id, key: string): int
+addslider(f: ref IcForm->Form, id: int, key: string): int
 {
 	field: IcForm->Field;
 
-	if(f == nil || id == "" || key == "")
+	if(f == nil || id < 0 || key == "")
 		return -1;
 
 	field.kind = IcForm->KindSlider;
@@ -189,7 +189,7 @@ fieldvalue(u: ref IcUi->Ui, f: IcForm->Field): string
 	}
 
 	if(f.kind == IcForm->KindRadioGroup)
-		return control->selected(u, f.id);
+		return sys->sprint("%d", control->selected(u, f.id));
 
 	if(f.kind == IcForm->KindSlider)
 		return sys->sprint("%d", slider->value(u, f.id));
@@ -249,7 +249,7 @@ summary(f: ref IcForm->Form): string
 	if(f == nil)
 		return "form: nil";
 
-	s = "form " + f.id + ":";
+	s = "form " + sys->sprint("%d", f.id) + ":";
 
 	if(f.fields == nil || len f.fields == 0)
 		return s + " empty";
@@ -264,10 +264,10 @@ summary(f: ref IcForm->Form): string
 	return s;
 }
 
-submit(u: ref IcUi->Ui, f: ref IcForm->Form, dst, cmd: string): IcMsg->Msg
+submit(u: ref IcUi->Ui, f: ref IcForm->Form, dst: int, cmd: string): IcMsg->Msg
 {
 	m: IcMsg->Msg;
-	src: string;
+	src: int;
 
 	if(f == nil)
 		return msg->none();
@@ -275,10 +275,10 @@ submit(u: ref IcUi->Ui, f: ref IcForm->Form, dst, cmd: string): IcMsg->Msg
 	collect(u, f);
 
 	src = f.id;
-	if(src == "")
-		src = "form";
+	if(src < 0)
+		src = IcMsg->MsgNoNode;
 
-	if(dst == "")
+	if(dst < 0)
 		dst = src;
 
 	if(cmd == "")

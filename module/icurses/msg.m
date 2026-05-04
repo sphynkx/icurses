@@ -14,10 +14,12 @@ IcMsg: module
 	RouteBubble: con 1;
 	RouteSubtree: con 2;
 
+	MsgNoNode: con -1;
+
 	Msg: adt
 	{
-		src:     string;
-		dst:     string;
+		src:     int;
+		dst:     int;
 		kind:    int;
 		cmd:     string;
 		route:   int;
@@ -35,6 +37,6 @@ IcMsg: module
 	init: fn();
 
 	none: fn(): Msg;
-	newmsg: fn(src, dst: string, kind: int, cmd: string): Msg;
+	newmsg: fn(src, dst: int, kind: int, cmd: string): Msg;
 	isnone: fn(m: Msg): int;
 };

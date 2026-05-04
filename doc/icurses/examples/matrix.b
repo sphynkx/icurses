@@ -73,8 +73,21 @@ lastresizecheck: int;
 # canvas from the registry. The active canvas id therefore includes a generation
 # number derived from resizes.
 #
-CanvasBase: con "canvas.matrix";
-canvasid: string;
+CanvasBase: con 3000;
+canvasid: int;
+
+#
+# Stable UI node ids.
+#
+RootId: con 0;
+AppId: con 1;
+AnimId: con 2;
+PanelId: con 10;
+BtnPauseId: con 11;
+BtnFasterId: con 12;
+BtnSlowerId: con 13;
+BtnCharsetId: con 14;
+BtnTruecolorId: con 15;
 
 #
 # Alternate screen state.
@@ -269,7 +282,7 @@ snext: array of int;
 build: fn(u: ref IcUi->Ui);
 panelw: fn(): int;
 panelh: fn(): int;
-makecanvasid: fn(): string;
+makecanvasid: fn(): int;
 rebuildui: fn(u: ref IcUi->Ui, oldw, oldh: int): ref IcUi->Ui;
 checkresize: fn(u: ref IcUi->Ui): ref IcUi->Ui;
 maybecheckresize: fn(u: ref IcUi->Ui): ref IcUi->Ui;
@@ -536,9 +549,9 @@ panelh(): int
 #
 # Build a unique canvas id for the current UI generation.
 #
-makecanvasid(): string
+makecanvasid(): int
 {
-	return CanvasBase + "." + sys->sprint("%d", resizes);
+	return CanvasBase + resizes;
 }
 
 #
@@ -1253,7 +1266,7 @@ fulldraw(u: ref IcUi->Ui)
 #
 build(u: ref IcUi->Ui)
 {
-	root: string;
+	root: int;
 
 	root = ui->rootid(u);
 	canvasid = makecanvasid();
@@ -1264,36 +1277,36 @@ build(u: ref IcUi->Ui)
 
 	ui->canvas(u, root, canvasid, 0, 0, cw, ch);
 
-	ui->window(u, root, "win.panel", PanelX, PanelY, panelw(), panelh(), "Animation control (press `h` to hide)");
-	ui->setframe(u, "win.panel", IcPaint->FrameDouble);
-	ui->setcontent(u, "win.panel",
+	ui->window(u, root, PanelId, PanelX, PanelY, panelw(), panelh(), "Animation control (press `h` to hide)");
+	ui->setframe(u, PanelId, IcPaint->FrameDouble);
+	ui->setcontent(u, PanelId,
 		"Sparse scheduled stream model. c cycles charset by terminal source policy. t toggles truecolor. Press m to toggle optional mouse wheel focus.");
-	ui->setscroll(u, "win.panel", IcView->ScrollClip, 0);
+	ui->setscroll(u, PanelId, IcView->ScrollClip, 0);
 
-	ui->button(u, "win.panel", "btn.pause", 2, 5, 11, 1, "Pause", "", "app", "app.pause");
-	ui->button(u, "win.panel", "btn.faster", 14, 5, 11, 1, "Fast", "", "app", "app.fast");
-	ui->button(u, "win.panel", "btn.slower", 26, 5, 11, 1, "Slow", "", "app", "app.slow");
-	ui->button(u, "win.panel", "btn.charset", 38, 5, 11, 1, "Charset", "", "app", "app.charset");
-	ui->button(u, "win.panel", "btn.truecolor", 2, 6, 14, 1, "Truecolor", "", "app", "app.truecolor");
+	ui->button(u, PanelId, BtnPauseId, 2, 5, 11, 1, "Pause", "", AppId, "app.pause");
+	ui->button(u, PanelId, BtnFasterId, 14, 5, 11, 1, "Fast", "", AppId, "app.fast");
+	ui->button(u, PanelId, BtnSlowerId, 26, 5, 11, 1, "Slow", "", AppId, "app.slow");
+	ui->button(u, PanelId, BtnCharsetId, 38, 5, 11, 1, "Charset", "", AppId, "app.charset");
+	ui->button(u, PanelId, BtnTruecolorId, 2, 6, 14, 1, "Truecolor", "", AppId, "app.truecolor");
 
-	ui->bindkey(u, " ", "app", "app.pause");
-	ui->bindkey(u, "+", "app", "app.fast");
-	ui->bindkey(u, "=", "app", "app.fast");
-	ui->bindkey(u, "-", "app", "app.slow");
-	ui->bindkey(u, "_", "app", "app.slow");
-	ui->bindkey(u, "c", "app", "app.charset");
-	ui->bindkey(u, "C", "app", "app.charset");
-	ui->bindkey(u, "t", "app", "app.truecolor");
-	ui->bindkey(u, "T", "app", "app.truecolor");
-	ui->bindkey(u, "h", "win.panel", "node.toggle");
-	ui->bindkey(u, "H", "win.panel", "node.toggle");
-	ui->bindkey(u, "m", "app", "app.mouse");
-	ui->bindkey(u, "M", "app", "app.mouse");
+	ui->bindkey(u, " ", AppId, "app.pause");
+	ui->bindkey(u, "+", AppId, "app.fast");
+	ui->bindkey(u, "=", AppId, "app.fast");
+	ui->bindkey(u, "-", AppId, "app.slow");
+	ui->bindkey(u, "_", AppId, "app.slow");
+	ui->bindkey(u, "c", AppId, "app.charset");
+	ui->bindkey(u, "C", AppId, "app.charset");
+	ui->bindkey(u, "t", AppId, "app.truecolor");
+	ui->bindkey(u, "T", AppId, "app.truecolor");
+	ui->bindkey(u, "h", PanelId, "node.toggle");
+	ui->bindkey(u, "H", PanelId, "node.toggle");
+	ui->bindkey(u, "m", AppId, "app.mouse");
+	ui->bindkey(u, "M", AppId, "app.mouse");
 
 	if(!panelvisible)
-		ui->dispatch(u, msg->newmsg("matrix", "win.panel", IcMsg->KindCommand, "node.toggle"));
+		ui->dispatch(u, msg->newmsg(AnimId, PanelId, IcMsg->KindCommand, "node.toggle"));
 
-	ui->setfocus(u, "btn.pause");
+	ui->setfocus(u, BtnPauseId);
 	ui->setstatus(u, statusline());
 }
 
@@ -1441,14 +1454,14 @@ handleanimkey(u: ref IcUi->Ui, k: int): int
 		return 1;
 
 	'h' =>
-		ui->dispatch(u, msg->newmsg("anim", "win.panel", IcMsg->KindCommand, "node.toggle"));
+		ui->dispatch(u, msg->newmsg(AnimId, PanelId, IcMsg->KindCommand, "node.toggle"));
 		panelvisible = !panelvisible;
 		ui->setstatus(u, statusline());
 		fulldraw(u);
 		return 1;
 
 	'H' =>
-		ui->dispatch(u, msg->newmsg("anim", "win.panel", IcMsg->KindCommand, "node.toggle"));
+		ui->dispatch(u, msg->newmsg(AnimId, PanelId, IcMsg->KindCommand, "node.toggle"));
 		panelvisible = !panelvisible;
 		ui->setstatus(u, statusline());
 		fulldraw(u);
@@ -1613,7 +1626,7 @@ togglemouse(u: ref IcUi->Ui)
 handlemouse(u: ref IcUi->Ui, raw: string): int
 {
 	i, ok, x, y, buttons, mods: int;
-	id: string;
+	id: int;
 
 	x = 0;
 	y = 0;
@@ -1645,9 +1658,9 @@ handlemouse(u: ref IcUi->Ui, raw: string): int
 
 	if((buttons & MouseWheelUp) != 0){
 		id = view->prevfocus(u.tree);
-		if(id != ""){
+		if(id != IcView->NoId){
 			ui->setfocus(u, id);
-			ui->setstatus(u, "wheel up focus " + id + " | " + statusline());
+			ui->setstatus(u, "wheel up focus " + sys->sprint("%d", id) + " | " + statusline());
 			fulldraw(u);
 			return 1;
 		}
@@ -1655,9 +1668,9 @@ handlemouse(u: ref IcUi->Ui, raw: string): int
 
 	if((buttons & MouseWheelDown) != 0){
 		id = view->nextfocus(u.tree);
-		if(id != ""){
+		if(id != IcView->NoId){
 			ui->setfocus(u, id);
-			ui->setstatus(u, "wheel down focus " + id + " | " + statusline());
+			ui->setstatus(u, "wheel down focus " + sys->sprint("%d", id) + " | " + statusline());
 			fulldraw(u);
 			return 1;
 		}

@@ -12,26 +12,26 @@ IcForm: module
 	Field: adt
 	{
 		kind:  int;
-		id:    string;
+		id:    int;
 		key:   string;
 		value: string;
 	};
 
 	Form: adt
 	{
-		id:     string;
+		id:     int;
 		fields: array of Field;
 	};
 
 	init: fn();
 
-	new: fn(id: string): ref Form;
+	new: fn(id: int): ref Form;
 	clear: fn(f: ref Form);
 
-	addinput: fn(f: ref Form, id, key: string): int;
-	addcheckbox: fn(f: ref Form, id, key: string): int;
-	addradiogroup: fn(f: ref Form, id, key: string): int;
-	addslider: fn(f: ref Form, id, key: string): int;
+	addinput: fn(f: ref Form, id: int, key: string): int;
+	addcheckbox: fn(f: ref Form, id: int, key: string): int;
+	addradiogroup: fn(f: ref Form, id: int, key: string): int;
+	addslider: fn(f: ref Form, id: int, key: string): int;
 
 	collect: fn(u: ref IcUi->Ui, f: ref Form): int;
 
@@ -39,5 +39,5 @@ IcForm: module
 	setvalue: fn(f: ref Form, key, value: string): int;
 
 	summary: fn(f: ref Form): string;
-	submit: fn(u: ref IcUi->Ui, f: ref Form, dst, cmd: string): IcMsg->Msg;
+	submit: fn(u: ref IcUi->Ui, f: ref Form, dst: int, cmd: string): IcMsg->Msg;
 };

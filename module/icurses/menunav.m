@@ -10,9 +10,9 @@ IcMenuNav: module
 
 	Menu: adt
 	{
-		navid: string;
-		popupid: string;
-		actionid: string;
+		navid: int;
+		popupid: int;
+		actionid: int;
 
 		navitems: array of IcMenu->Item;
 		popupitems: array of IcMenu->Item;
@@ -28,11 +28,11 @@ IcMenuNav: module
 
 	init: fn();
 
-	new: fn(navid, popupid, actionid: string): ref Menu;
+	new: fn(navid, popupid, actionid: int): ref Menu;
 
-	setnav: fn(m: ref Menu, id: string, items: array of IcMenu->Item, sel: int): int;
-	setpopup: fn(m: ref Menu, id: string, items: array of IcMenu->Item, sel: int): int;
-	setaction: fn(m: ref Menu, id: string, items: array of IcMenu->Item, sel: int): int;
+	setnav: fn(m: ref Menu, id: int, items: array of IcMenu->Item, sel: int): int;
+	setpopup: fn(m: ref Menu, id: int, items: array of IcMenu->Item, sel: int): int;
+	setaction: fn(m: ref Menu, id: int, items: array of IcMenu->Item, sel: int): int;
 
 	setwrap: fn(m: ref Menu, wrap: int): int;
 

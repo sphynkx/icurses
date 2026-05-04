@@ -8,7 +8,7 @@ idx: fn(c: ref IcCanvas->Canvas, x, y: int): int;
 inrange: fn(c: ref IcCanvas->Canvas, x, y: int): int;
 mkcell: fn(ch, code: string): IcCanvas->Cell;
 appendcanvas: fn(a: array of ref IcCanvas->Canvas, c: ref IcCanvas->Canvas): array of ref IcCanvas->Canvas;
-removecanvasid: fn(a: array of ref IcCanvas->Canvas, id: string): array of ref IcCanvas->Canvas;
+removecanvasid: fn(a: array of ref IcCanvas->Canvas, id: int): array of ref IcCanvas->Canvas;
 
 DefaultCode: con "0";
 
@@ -53,12 +53,12 @@ appendcanvas(a: array of ref IcCanvas->Canvas, c: ref IcCanvas->Canvas): array o
 	return b;
 }
 
-removecanvasid(a: array of ref IcCanvas->Canvas, id: string): array of ref IcCanvas->Canvas
+removecanvasid(a: array of ref IcCanvas->Canvas, id: int): array of ref IcCanvas->Canvas
 {
 	b: array of ref IcCanvas->Canvas;
 	i, n, k: int;
 
-	if(a == nil || id == "")
+	if(a == nil || id < 0)
 		return a;
 
 	n = 0;
@@ -96,12 +96,12 @@ inrange(c: ref IcCanvas->Canvas, x, y: int): int
 	return 1;
 }
 
-newcanvas(id: string, w, h: int): ref IcCanvas->Canvas
+newcanvas(id: int, w, h: int): ref IcCanvas->Canvas
 {
 	c: ref IcCanvas->Canvas;
 	i, n: int;
 
-	if(id == "")
+	if(id < 0)
 		return nil;
 
 	if(w <= 0)
@@ -127,11 +127,11 @@ newcanvas(id: string, w, h: int): ref IcCanvas->Canvas
 	return c;
 }
 
-find(id: string): ref IcCanvas->Canvas
+find(id: int): ref IcCanvas->Canvas
 {
 	i: int;
 
-	if(id == "" || registry == nil)
+	if(id < 0 || registry == nil)
 		return nil;
 
 	for(i = 0; i < len registry; i++){
@@ -142,9 +142,9 @@ find(id: string): ref IcCanvas->Canvas
 	return nil;
 }
 
-remove(id: string)
+remove(id: int)
 {
-	if(id == "")
+	if(id < 0)
 		return;
 
 	registry = removecanvasid(registry, id);

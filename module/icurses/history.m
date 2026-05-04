@@ -6,8 +6,8 @@ IcHistory: module
 
 	History: adt
 	{
-		inputid:  string;
-		popupid:  string;
+		inputid:  int;
+		popupid:  int;
 
 		items:    array of string;
 		sel:      int;
@@ -20,7 +20,7 @@ IcHistory: module
 
 	init: fn();
 
-	new: fn(inputid: string, maxitems: int): ref History;
+	new: fn(inputid: int, maxitems: int): ref History;
 
 	clear: fn(h: ref History);
 	add: fn(h: ref History, text: string): int;
@@ -33,7 +33,7 @@ IcHistory: module
 	next: fn(h: ref History): string;
 
 	popup: fn(u: ref IcUi->Ui, h: ref History,
-		parentid, id: string,
+		parentid, id: int,
 		x, y, w, rows: int): int;
 
 	show: fn(u: ref IcUi->Ui, h: ref History): int;

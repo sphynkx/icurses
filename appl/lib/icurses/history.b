@@ -13,7 +13,7 @@ DefaultMaxItems: con 32;
 DefaultRows: con 5;
 
 none: fn(): IcMsg->Msg;
-focusedid: fn(u: ref IcUi->Ui): string;
+focusedid: fn(u: ref IcUi->Ui): int;
 matchesfocusedinput: fn(u: ref IcUi->Ui, h: ref IcHistory->History): int;
 
 removeitem: fn(a: array of string, s: string): array of string;
@@ -22,10 +22,9 @@ truncateitems: fn(a: array of string, maxitems: int): array of string;
 
 historymsg: fn(h: ref IcHistory->History, cmd, value: string): IcMsg->Msg;
 
-lineid: fn(popupid: string, i: int): string;
 clip: fn(s: string, w: int): string;
 padright: fn(s: string, w: int): string;
-settreevisible: fn(u: ref IcUi->Ui, id: string, visible: int);
+settreevisible: fn(u: ref IcUi->Ui, id: int, visible: int);
 updatepopup: fn(u: ref IcUi->Ui, h: ref IcHistory->History): int;
 
 init()
@@ -66,7 +65,7 @@ none(): IcMsg->Msg
 	return msg->none();
 }
 
-new(inputid: string, maxitems: int): ref IcHistory->History
+new(inputid: int, maxitems: int): ref IcHistory->History
 {
 	h: ref IcHistory->History;
 
@@ -75,7 +74,7 @@ new(inputid: string, maxitems: int): ref IcHistory->History
 
 	h = ref IcHistory->History;
 	h.inputid = inputid;
-	h.popupid = "";
+	h.popupid = IcView->NoId;
 	h.items = array[0] of string;
 	h.sel = -1;
 	h.maxitems = maxitems;
@@ -265,16 +264,16 @@ next(h: ref IcHistory->History): string
 	return current(h);
 }
 
-focusedid(u: ref IcUi->Ui): string
+focusedid(u: ref IcUi->Ui): int
 {
 	n: ref IcView->Node;
 
 	if(u == nil || u.tree == nil)
-		return "";
+		return IcView->NoId;
 
 	n = view->focusnode(u.tree);
 	if(n == nil)
-		return "";
+		return IcView->NoId;
 
 	return n.id;
 }
@@ -284,7 +283,7 @@ matchesfocusedinput(u: ref IcUi->Ui, h: ref IcHistory->History): int
 	if(u == nil || h == nil)
 		return 0;
 
-	if(h.inputid == "")
+	if(h.inputid < 0)
 		return 0;
 
 	if(focusedid(u) != h.inputid)
@@ -300,7 +299,7 @@ historymsg(h: ref IcHistory->History, cmd, value: string): IcMsg->Msg
 	if(h == nil)
 		return none();
 
-	m = msg->newmsg("history", h.inputid, IcMsg->KindInput, cmd);
+	m = msg->newmsg(IcMsg->MsgNoNode, h.inputid, IcMsg->KindInput, cmd);
 	m.sarg = value;
 	m.iarg0 = h.sel;
 	m.iarg1 = count(h);
@@ -308,11 +307,6 @@ historymsg(h: ref IcHistory->History, cmd, value: string): IcMsg->Msg
 	m.handled = 1;
 
 	return m;
-}
-
-lineid(popupid: string, i: int): string
-{
-	return popupid + "." + sys->sprint("%d", i);
 }
 
 clip(s: string, w: int): string
@@ -339,12 +333,12 @@ padright(s: string, w: int): string
 	return s;
 }
 
-settreevisible(u: ref IcUi->Ui, id: string, visible: int)
+settreevisible(u: ref IcUi->Ui, id: int, visible: int)
 {
 	n, c: ref IcView->Node;
 	i: int;
 
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return;
 
 	n = view->find(u.tree, id);
@@ -364,16 +358,16 @@ settreevisible(u: ref IcUi->Ui, id: string, visible: int)
 }
 
 popup(u: ref IcUi->Ui, h: ref IcHistory->History,
-	parentid, id: string,
+	parentid, id: int,
 	x, y, w, rows: int): int
 {
 	n: ref IcView->Node;
-	i: int;
+	i, line: int;
 
 	if(u == nil || u.tree == nil || h == nil)
 		return -1;
 
-	if(id == "")
+	if(id < 0)
 		return -1;
 
 	if(w <= 0)
@@ -389,7 +383,8 @@ popup(u: ref IcUi->Ui, h: ref IcHistory->History,
 			return -1;
 
 		for(i = 0; i < rows; i++){
-			if(ui->label(u, id, lineid(id, i), 0, i, w, "") < 0)
+			line = view->allocid(u.tree);
+			if(ui->label(u, id, line, 0, i, w, "") < 0)
 				return -1;
 		}
 	}
@@ -407,13 +402,13 @@ popup(u: ref IcUi->Ui, h: ref IcHistory->History,
 updatepopup(u: ref IcUi->Ui, h: ref IcHistory->History): int
 {
 	i, idx, top, rows, w: int;
-	id, s, mark: string;
+	s, mark: string;
 	n, line: ref IcView->Node;
 
 	if(u == nil || u.tree == nil || h == nil)
 		return -1;
 
-	if(h.popupid == "")
+	if(h.popupid < 0)
 		return 0;
 
 	n = view->find(u.tree, h.popupid);
@@ -437,9 +432,10 @@ updatepopup(u: ref IcUi->Ui, h: ref IcHistory->History): int
 
 	for(i = 0; i < rows; i++){
 		idx = top + i;
-		id = lineid(h.popupid, i);
 
-		line = view->find(u.tree, id);
+		line = nil;
+		if(i < view->childcount(n))
+			line = view->find(u.tree, view->childat(n, i));
 		if(line == nil)
 			continue;
 
@@ -467,7 +463,7 @@ show(u: ref IcUi->Ui, h: ref IcHistory->History): int
 	if(u == nil || h == nil)
 		return -1;
 
-	if(h.popupid == "")
+	if(h.popupid < 0)
 		return 0;
 
 	updatepopup(u, h);
@@ -482,7 +478,7 @@ hide(u: ref IcUi->Ui, h: ref IcHistory->History): int
 	if(u == nil || h == nil)
 		return -1;
 
-	if(h.popupid == "")
+	if(h.popupid < 0)
 		return 0;
 
 	h.visible = 0;
@@ -514,7 +510,7 @@ apply(u: ref IcUi->Ui, h: ref IcHistory->History): IcMsg->Msg
 	m = input->settext(u, h.inputid, value);
 	input->setcursor(u, h.inputid, len value);
 
-	m.src = "history";
+	m.src = IcMsg->MsgNoNode;
 	m.dst = h.inputid;
 	m.cmd = "history.apply";
 	m.sarg = value;

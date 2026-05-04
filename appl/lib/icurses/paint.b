@@ -853,7 +853,7 @@ drawbutton(r: ref IcPaint->Renderer, t: ref IcView->Tree, n: ref IcView->Node)
 
 	label = view->gettext(n);
 	if(label == "")
-		label = n.id;
+		label = sys->sprint("%d", n.id);
 
 	if(n.hotkey != "")
 		s = "[" + n.hotkey + "] " + label;
@@ -1129,7 +1129,7 @@ flush(r: ref IcPaint->Renderer)
 	ic->resettty(r.out);
 }
 
-canvasnew(id: string, w, h: int): int
+canvasnew(id: int, w, h: int): int
 {
 	if(canvas == nil)
 		return -1;
@@ -1140,7 +1140,7 @@ canvasnew(id: string, w, h: int): int
 	return 0;
 }
 
-canvasclear(id, ch, code: string): int
+canvasclear(id: int, ch, code: string): int
 {
 	c: ref IcCanvas->Canvas;
 
@@ -1155,7 +1155,7 @@ canvasclear(id, ch, code: string): int
 	return 0;
 }
 
-canvasfill(id: string, x, y, w, h: int, ch, code: string): int
+canvasfill(id: int, x, y, w, h: int, ch, code: string): int
 {
 	c: ref IcCanvas->Canvas;
 
@@ -1170,7 +1170,7 @@ canvasfill(id: string, x, y, w, h: int, ch, code: string): int
 	return 0;
 }
 
-canvasputc(id: string, x, y: int, ch, code: string): int
+canvasputc(id: int, x, y: int, ch, code: string): int
 {
 	c: ref IcCanvas->Canvas;
 
@@ -1185,7 +1185,7 @@ canvasputc(id: string, x, y: int, ch, code: string): int
 	return 0;
 }
 
-canvasputs(id: string, x, y: int, text, code: string): int
+canvasputs(id: int, x, y: int, text, code: string): int
 {
 	c: ref IcCanvas->Canvas;
 

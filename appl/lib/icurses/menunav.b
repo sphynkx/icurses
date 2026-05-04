@@ -17,7 +17,7 @@ countfor: fn(m: ref IcMenuNav->Menu, active: int): int;
 selfor: fn(m: ref IcMenuNav->Menu, active: int): int;
 setselfor: fn(m: ref IcMenuNav->Menu, active, sel: int);
 
-activepath: fn(m: ref IcMenuNav->Menu): string;
+activepath: fn(m: ref IcMenuNav->Menu): int;
 makemsg: fn(m: ref IcMenuNav->Menu, cmd: string, it: IcMenu->Item): IcMsg->Msg;
 setcheckedactive: fn(m: ref IcMenuNav->Menu, index, checked: int);
 
@@ -38,7 +38,7 @@ init()
 	msg->init();
 	icmenu->init();
 
-	emptyitem = icmenu->newitem("", "", "", "");
+	emptyitem = icmenu->newitem("", "", IcView->NoId, "");
 }
 
 clamp(v, lo, hi: int): int
@@ -94,7 +94,7 @@ findhotkey(items: array of IcMenu->Item, k: int): int
 	return -1;
 }
 
-new(navid, popupid, actionid: string): ref IcMenuNav->Menu
+new(navid, popupid, actionid: int): ref IcMenuNav->Menu
 {
 	m: ref IcMenuNav->Menu;
 
@@ -118,7 +118,7 @@ new(navid, popupid, actionid: string): ref IcMenuNav->Menu
 	return m;
 }
 
-setnav(m: ref IcMenuNav->Menu, id: string, items: array of IcMenu->Item, sel: int): int
+setnav(m: ref IcMenuNav->Menu, id: int, items: array of IcMenu->Item, sel: int): int
 {
 	if(m == nil)
 		return -1;
@@ -135,7 +135,7 @@ setnav(m: ref IcMenuNav->Menu, id: string, items: array of IcMenu->Item, sel: in
 	return 0;
 }
 
-setpopup(m: ref IcMenuNav->Menu, id: string, items: array of IcMenu->Item, sel: int): int
+setpopup(m: ref IcMenuNav->Menu, id: int, items: array of IcMenu->Item, sel: int): int
 {
 	if(m == nil)
 		return -1;
@@ -152,7 +152,7 @@ setpopup(m: ref IcMenuNav->Menu, id: string, items: array of IcMenu->Item, sel: 
 	return 0;
 }
 
-setaction(m: ref IcMenuNav->Menu, id: string, items: array of IcMenu->Item, sel: int): int
+setaction(m: ref IcMenuNav->Menu, id: int, items: array of IcMenu->Item, sel: int): int
 {
 	if(m == nil)
 		return -1;
@@ -280,10 +280,10 @@ activeid(m: ref IcMenuNav->Menu): string
 	return "unknown";
 }
 
-activepath(m: ref IcMenuNav->Menu): string
+activepath(m: ref IcMenuNav->Menu): int
 {
 	if(m == nil)
-		return "";
+		return IcView->NoId;
 
 	if(m.active == IcMenuNav->ActiveNav)
 		return m.navid;
@@ -294,7 +294,7 @@ activepath(m: ref IcMenuNav->Menu): string
 	if(m.active == IcMenuNav->ActiveAction)
 		return m.actionid;
 
-	return "";
+	return IcView->NoId;
 }
 
 activeindex(m: ref IcMenuNav->Menu): int
@@ -338,13 +338,13 @@ render(u: ref IcUi->Ui, m: ref IcMenuNav->Menu): int
 	if(u == nil || m == nil)
 		return -1;
 
-	if(m.navid != "")
+	if(m.navid != IcView->NoId)
 		icmenu->setnavbar(u, m.navid, m.navitems, m.navsel);
 
-	if(m.popupid != "")
+	if(m.popupid != IcView->NoId)
 		icmenu->setpopupmenu(u, m.popupid, m.popupitems, m.popupsel);
 
-	if(m.actionid != "")
+	if(m.actionid != IcView->NoId)
 		icmenu->setactionbar(u, m.actionid, m.actionitems, m.actionsel);
 
 	return 0;
@@ -353,16 +353,20 @@ render(u: ref IcUi->Ui, m: ref IcMenuNav->Menu): int
 makemsg(m: ref IcMenuNav->Menu, cmd: string, it: IcMenu->Item): IcMsg->Msg
 {
 	r: IcMsg->Msg;
-	dst: string;
+	dst, src: int;
 
 	if(m == nil)
 		return msg->none();
 
 	dst = it.targetid;
-	if(dst == "")
+	if(dst == IcView->NoId)
 		dst = activepath(m);
 
-	r = msg->newmsg(activepath(m), dst, IcMsg->KindCommand, cmd);
+	src = activepath(m);
+	if(src == IcView->NoId)
+		src = IcMsg->MsgNoNode;
+
+	r = msg->newmsg(src, dst, IcMsg->KindCommand, cmd);
 	r.sarg = it.label;
 	r.iarg0 = m.active;
 	r.iarg1 = activeindex(m);
@@ -610,7 +614,7 @@ summary(m: ref IcMenuNav->Menu): string
 		s += " radio";
 
 	if(icmenu->submenu(it))
-		s += " submenu=" + it.submenuid;
+		s += " submenu=" + sys->sprint("%d", it.submenuid);
 
 	return s;
 }

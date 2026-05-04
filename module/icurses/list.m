@@ -6,7 +6,7 @@ IcList: module
 
 	List: adt
 	{
-		id:    string;
+		id:    int;
 		items: array of string;
 
 		top:   int;
@@ -17,7 +17,7 @@ IcList: module
 
 	init: fn();
 
-	new: fn(id: string, rows: int): ref List;
+	new: fn(id: int, rows: int): ref List;
 	clear: fn(l: ref List);
 
 	setitems: fn(l: ref List, items: array of string): int;

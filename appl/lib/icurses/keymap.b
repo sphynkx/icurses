@@ -66,12 +66,12 @@ matchkey(k: int, key: string): int
 	return c == kk;
 }
 
-bind(km: ref IcKeymap->Keymap, key, target, cmd: string): int
+bind(km: ref IcKeymap->Keymap, key: string, target: int, cmd: string): int
 {
 	return bindargs(km, key, target, cmd, "", 0, 0, 0);
 }
 
-bindargs(km: ref IcKeymap->Keymap, key, target, cmd, sarg: string, iarg0, iarg1, iarg2: int): int
+bindargs(km: ref IcKeymap->Keymap, key: string, target: int, cmd, sarg: string, iarg0, iarg1, iarg2: int): int
 {
 	b: IcKeymap->Binding;
 	i: int;
@@ -79,7 +79,7 @@ bindargs(km: ref IcKeymap->Keymap, key, target, cmd, sarg: string, iarg0, iarg1,
 	if(km == nil)
 		return -1;
 
-	if(key == "" || target == "" || cmd == "")
+	if(key == "" || target < 0 || cmd == "")
 		return -1;
 
 	b.key = key;
@@ -116,7 +116,7 @@ find(km: ref IcKeymap->Keymap, k: int): IcMsg->Msg
 		if(!matchkey(k, b.key))
 			continue;
 
-		m = msg->newmsg("hotkey", b.target, IcMsg->KindCommand, b.cmd);
+		m = msg->newmsg(IcMsg->MsgNoNode, b.target, IcMsg->KindCommand, b.cmd);
 		m.sarg = b.sarg;
 		m.iarg0 = b.iarg0;
 		m.iarg1 = b.iarg1;

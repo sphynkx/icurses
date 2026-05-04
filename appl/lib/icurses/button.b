@@ -9,7 +9,7 @@ ui: IcUi;
 
 DefaultPressMs: con 90;
 
-findnode: fn(u: ref IcUi->Ui, id: string): ref IcView->Node;
+findnode: fn(u: ref IcUi->Ui, id: int): ref IcView->Node;
 pressedtext: fn(s: string): string;
 
 init()
@@ -35,9 +35,9 @@ init()
 	ui->init();
 }
 
-findnode(u: ref IcUi->Ui, id: string): ref IcView->Node
+findnode(u: ref IcUi->Ui, id: int): ref IcView->Node
 {
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	return view->find(u.tree, id);
@@ -51,7 +51,7 @@ pressedtext(s: string): string
 	return "> " + s + " <";
 }
 
-presslabel(u: ref IcUi->Ui, id, pressed: string, ms: int): int
+presslabel(u: ref IcUi->Ui, id: int, pressed: string, ms: int): int
 {
 	n: ref IcView->Node;
 	normal: string;
@@ -76,7 +76,7 @@ presslabel(u: ref IcUi->Ui, id, pressed: string, ms: int): int
 	return 0;
 }
 
-press(u: ref IcUi->Ui, id: string, ms: int): int
+press(u: ref IcUi->Ui, id: int, ms: int): int
 {
 	n: ref IcView->Node;
 
@@ -87,11 +87,12 @@ press(u: ref IcUi->Ui, id: string, ms: int): int
 	return presslabel(u, id, pressedtext(view->gettext(n)), ms);
 }
 
-click(u: ref IcUi->Ui, id: string): IcMsg->Msg
+click(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 	m: IcMsg->Msg;
-	dst, cmd: string;
+	dst: int;
+	cmd: string;
 
 	n = findnode(u, id);
 	if(n == nil)
@@ -101,7 +102,7 @@ click(u: ref IcUi->Ui, id: string): IcMsg->Msg
 		return msg->none();
 
 	dst = n.targetid;
-	if(dst == "")
+	if(dst == IcView->NoId)
 		dst = n.id;
 
 	cmd = n.command;
@@ -117,7 +118,7 @@ click(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return ui->dispatch(u, m);
 }
 
-activate(u: ref IcUi->Ui, id: string, ms: int): IcMsg->Msg
+activate(u: ref IcUi->Ui, id: int, ms: int): IcMsg->Msg
 {
 	if(press(u, id, ms) < 0)
 		return msg->none();
@@ -125,7 +126,7 @@ activate(u: ref IcUi->Ui, id: string, ms: int): IcMsg->Msg
 	return click(u, id);
 }
 
-setenabled(u: ref IcUi->Ui, id: string, enabled: int): int
+setenabled(u: ref IcUi->Ui, id: int, enabled: int): int
 {
 	n: ref IcView->Node;
 

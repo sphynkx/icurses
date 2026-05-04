@@ -11,7 +11,7 @@ ic: Icurses;
 DefaultCommand: con "control.change";
 ControlMagic: con 17219;
 
-findnode: fn(u: ref IcUi->Ui, id: string): ref IcView->Node;
+findnode: fn(u: ref IcUi->Ui, id: int): ref IcView->Node;
 iscontrolnode: fn(n: ref IcView->Node): int;
 ensurewidth: fn(style: int, label: string, w: int): int;
 rawlabel: fn(n: ref IcView->Node): string;
@@ -19,11 +19,11 @@ rendertext: fn(n: ref IcView->Node): string;
 rendernode: fn(n: ref IcView->Node);
 setrawchecked: fn(n: ref IcView->Node, checked: int);
 makemsg: fn(n: ref IcView->Node): IcMsg->Msg;
-samegroup: fn(n: ref IcView->Node, groupid: string): int;
-clearradiogroup: fn(u: ref IcUi->Ui, groupid, exceptid: string);
-setgroupselected: fn(u: ref IcUi->Ui, groupid, id: string);
+samegroup: fn(n: ref IcView->Node, groupid: int): int;
+clearradiogroup: fn(u: ref IcUi->Ui, groupid, exceptid: int);
+setgroupselected: fn(u: ref IcUi->Ui, groupid, id: int);
 hotkeymatch: fn(k: int, hotkey: string): int;
-findcontrolhotkeynode: fn(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node;
+findcontrolhotkeynode: fn(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node;
 activate: fn(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg;
 
 init()
@@ -58,9 +58,9 @@ init()
 	ic->init();
 }
 
-findnode(u: ref IcUi->Ui, id: string): ref IcView->Node
+findnode(u: ref IcUi->Ui, id: int): ref IcView->Node
 {
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	return view->find(u.tree, id);
@@ -122,7 +122,7 @@ rawlabel(n: ref IcView->Node): string
 	if(s != "")
 		return s;
 
-	return n.id;
+	return sys->sprint("%d", n.id);
 }
 
 rendertext(n: ref IcView->Node): string
@@ -200,13 +200,14 @@ setrawchecked(n: ref IcView->Node, checked: int)
 makemsg(n: ref IcView->Node): IcMsg->Msg
 {
 	m: IcMsg->Msg;
-	dst, cmd: string;
+	dst: int;
+	cmd: string;
 
 	if(n == nil)
 		return msg->none();
 
 	dst = n.targetid;
-	if(dst == "")
+	if(dst == IcView->NoId)
 		dst = n.id;
 
 	cmd = n.command;
@@ -222,12 +223,12 @@ makemsg(n: ref IcView->Node): IcMsg->Msg
 	return m;
 }
 
-samegroup(n: ref IcView->Node, groupid: string): int
+samegroup(n: ref IcView->Node, groupid: int): int
 {
 	if(!iscontrolnode(n))
 		return 0;
 
-	if(n.sarg != groupid)
+	if(n.sarg != sys->sprint("%d", groupid))
 		return 0;
 
 	if(n.iarg1 != IcControl->StyleRadio)
@@ -236,13 +237,13 @@ samegroup(n: ref IcView->Node, groupid: string): int
 	return 1;
 }
 
-clearradiogroup(u: ref IcUi->Ui, groupid, exceptid: string)
+clearradiogroup(u: ref IcUi->Ui, groupid, exceptid: int)
 {
 	g, n: ref IcView->Node;
 	i, count: int;
-	id: string;
+	id: int;
 
-	if(u == nil || u.tree == nil || groupid == "")
+	if(u == nil || u.tree == nil || groupid < 0)
 		return;
 
 	g = view->find(u.tree, groupid);
@@ -253,7 +254,7 @@ clearradiogroup(u: ref IcUi->Ui, groupid, exceptid: string)
 
 	for(i = 0; i < count; i++){
 		id = view->childat(g, i);
-		if(id == "" || id == exceptid)
+		if(id < 0 || id == exceptid)
 			continue;
 
 		n = view->find(u.tree, id);
@@ -264,18 +265,21 @@ clearradiogroup(u: ref IcUi->Ui, groupid, exceptid: string)
 	}
 }
 
-setgroupselected(u: ref IcUi->Ui, groupid, id: string)
+setgroupselected(u: ref IcUi->Ui, groupid, id: int)
 {
 	g: ref IcView->Node;
 
-	if(u == nil || u.tree == nil || groupid == "")
+	if(u == nil || u.tree == nil || groupid < 0)
 		return;
 
 	g = view->find(u.tree, groupid);
 	if(g == nil)
 		return;
 
-	view->setargs(g, id, g.iarg0, g.iarg1, g.iarg2);
+	if(id < 0)
+		view->setargs(g, "", g.iarg0, g.iarg1, g.iarg2);
+	else
+		view->setargs(g, sys->sprint("%d", id), g.iarg0, g.iarg1, g.iarg2);
 }
 
 hotkeymatch(k: int, hotkey: string): int
@@ -311,12 +315,12 @@ hotkeymatch(k: int, hotkey: string): int
 	return 0;
 }
 
-findcontrolhotkeynode(u: ref IcUi->Ui, id: string, k: int): ref IcView->Node
+findcontrolhotkeynode(u: ref IcUi->Ui, id: int, k: int): ref IcView->Node
 {
 	n, c, r: ref IcView->Node;
 	i: int;
 
-	if(u == nil || u.tree == nil || id == "")
+	if(u == nil || u.tree == nil || id < 0)
 		return nil;
 
 	n = view->find(u.tree, id);
@@ -358,7 +362,7 @@ activate(u: ref IcUi->Ui, n: ref IcView->Node): IcMsg->Msg
 	return toggle(u, n.id);
 }
 
-group(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, mode: int): int
+group(u: ref IcUi->Ui, parentid, id: int, x, y, w, h: int, mode: int): int
 {
 	n: ref IcView->Node;
 
@@ -381,9 +385,9 @@ group(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, mode: int): int
 	return 0;
 }
 
-checkbox(u: ref IcUi->Ui, parentid, id: string,
+checkbox(u: ref IcUi->Ui, parentid, id: int,
 	x, y, w: int,
-	label, hotkey, targetid, command: string,
+	label, hotkey: string, targetid: int, command: string,
 	checked: int): int
 {
 	n: ref IcView->Node;
@@ -407,9 +411,9 @@ checkbox(u: ref IcUi->Ui, parentid, id: string,
 	return 0;
 }
 
-radio(u: ref IcUi->Ui, groupid, id: string,
+radio(u: ref IcUi->Ui, groupid, id: int,
 	x, y, w: int,
-	label, hotkey, targetid, command: string,
+	label, hotkey: string, targetid: int, command: string,
 	checked: int): int
 {
 	n: ref IcView->Node;
@@ -417,7 +421,7 @@ radio(u: ref IcUi->Ui, groupid, id: string,
 	if(u == nil || u.tree == nil)
 		return -1;
 
-	if(groupid == "")
+	if(groupid < 0)
 		return -1;
 
 	w = ensurewidth(IcControl->StyleRadio, label, w);
@@ -430,7 +434,7 @@ radio(u: ref IcUi->Ui, groupid, id: string,
 		return -1;
 
 	view->setcontent(n, label);
-	view->setargs(n, groupid, 0, IcControl->StyleRadio, ControlMagic);
+	view->setargs(n, sys->sprint("%d", groupid), 0, IcControl->StyleRadio, ControlMagic);
 	rendernode(n);
 
 	if(checked)
@@ -439,9 +443,9 @@ radio(u: ref IcUi->Ui, groupid, id: string,
 	return 0;
 }
 
-switchbox(u: ref IcUi->Ui, parentid, id: string,
+switchbox(u: ref IcUi->Ui, parentid, id: int,
 	x, y, w: int,
-	label, hotkey, targetid, command: string,
+	label, hotkey: string, targetid: int, command: string,
 	on: int): int
 {
 	n: ref IcView->Node;
@@ -465,7 +469,7 @@ switchbox(u: ref IcUi->Ui, parentid, id: string,
 	return 0;
 }
 
-checked(u: ref IcUi->Ui, id: string): int
+checked(u: ref IcUi->Ui, id: int): int
 {
 	n: ref IcView->Node;
 
@@ -476,21 +480,23 @@ checked(u: ref IcUi->Ui, id: string): int
 	return n.iarg0 != 0;
 }
 
-setchecked(u: ref IcUi->Ui, id: string, checked: int): int
+setchecked(u: ref IcUi->Ui, id: int, checked: int): int
 {
 	n: ref IcView->Node;
-	groupid: string;
+	groupid: int;
 
 	n = findnode(u, id);
 	if(!iscontrolnode(n))
 		return -1;
 
 	if(n.iarg1 == IcControl->StyleRadio && checked){
-		groupid = n.sarg;
-		if(groupid != "")
+		groupid = int n.sarg;
+		if(n.sarg == "")
+			groupid = IcView->NoId;
+		if(groupid != IcView->NoId)
 			clearradiogroup(u, groupid, id);
 		setrawchecked(n, 1);
-		if(groupid != "")
+		if(groupid != IcView->NoId)
 			setgroupselected(u, groupid, id);
 		return 0;
 	}
@@ -498,14 +504,15 @@ setchecked(u: ref IcUi->Ui, id: string, checked: int): int
 	setrawchecked(n, checked != 0);
 
 	if(n.iarg1 == IcControl->StyleRadio && !checked && n.sarg != ""){
-		if(selected(u, n.sarg) == id)
-			setgroupselected(u, n.sarg, "");
+		groupid = int n.sarg;
+		if(selected(u, groupid) == id)
+			setgroupselected(u, groupid, IcView->NoId);
 	}
 
 	return 0;
 }
 
-toggle(u: ref IcUi->Ui, id: string): IcMsg->Msg
+toggle(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
 	v: int;
@@ -528,10 +535,10 @@ toggle(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return makemsg(n);
 }
 
-selectradio(u: ref IcUi->Ui, id: string): IcMsg->Msg
+selectradio(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	n: ref IcView->Node;
-	groupid: string;
+	groupid: int;
 
 	n = findnode(u, id);
 	if(!iscontrolnode(n))
@@ -543,30 +550,33 @@ selectradio(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	if(n.iarg1 != IcControl->StyleRadio)
 		return msg->none();
 
-	groupid = n.sarg;
-	if(groupid != "")
+	groupid = IcView->NoId;
+	if(n.sarg != "")
+		groupid = int n.sarg;
+
+	if(groupid != IcView->NoId)
 		clearradiogroup(u, groupid, id);
 
 	setrawchecked(n, 1);
 
-	if(groupid != "")
+	if(groupid != IcView->NoId)
 		setgroupselected(u, groupid, id);
 
 	return makemsg(n);
 }
 
-selected(u: ref IcUi->Ui, groupid: string): string
+selected(u: ref IcUi->Ui, groupid: int): int
 {
 	g: ref IcView->Node;
 
 	g = findnode(u, groupid);
-	if(g == nil)
-		return "";
+	if(g == nil || g.sarg == "")
+		return IcView->NoId;
 
-	return g.sarg;
+	return int g.sarg;
 }
 
-setenabled(u: ref IcUi->Ui, id: string, enabled: int): int
+setenabled(u: ref IcUi->Ui, id: int, enabled: int): int
 {
 	n: ref IcView->Node;
 

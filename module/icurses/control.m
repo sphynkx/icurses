@@ -13,30 +13,30 @@ IcControl: module
 
 	init: fn();
 
-	group: fn(u: ref IcUi->Ui, parentid, id: string, x, y, w, h: int, mode: int): int;
+	group: fn(u: ref IcUi->Ui, parentid, id: int, x, y, w, h: int, mode: int): int;
 
-	checkbox: fn(u: ref IcUi->Ui, parentid, id: string,
+	checkbox: fn(u: ref IcUi->Ui, parentid, id: int,
 		x, y, w: int,
-		label, hotkey, targetid, command: string,
+		label, hotkey: string, targetid: int, command: string,
 		checked: int): int;
 
-	radio: fn(u: ref IcUi->Ui, groupid, id: string,
+	radio: fn(u: ref IcUi->Ui, groupid, id: int,
 		x, y, w: int,
-		label, hotkey, targetid, command: string,
+		label, hotkey: string, targetid: int, command: string,
 		checked: int): int;
 
-	switchbox: fn(u: ref IcUi->Ui, parentid, id: string,
+	switchbox: fn(u: ref IcUi->Ui, parentid, id: int,
 		x, y, w: int,
-		label, hotkey, targetid, command: string,
+		label, hotkey: string, targetid: int, command: string,
 		on: int): int;
 
-	checked: fn(u: ref IcUi->Ui, id: string): int;
-	setchecked: fn(u: ref IcUi->Ui, id: string, checked: int): int;
-	toggle: fn(u: ref IcUi->Ui, id: string): IcMsg->Msg;
-	selectradio: fn(u: ref IcUi->Ui, id: string): IcMsg->Msg;
+	checked: fn(u: ref IcUi->Ui, id: int): int;
+	setchecked: fn(u: ref IcUi->Ui, id: int, checked: int): int;
+	toggle: fn(u: ref IcUi->Ui, id: int): IcMsg->Msg;
+	selectradio: fn(u: ref IcUi->Ui, id: int): IcMsg->Msg;
 
-	selected: fn(u: ref IcUi->Ui, groupid: string): string;
-	setenabled: fn(u: ref IcUi->Ui, id: string, enabled: int): int;
+	selected: fn(u: ref IcUi->Ui, groupid: int): int;
+	setenabled: fn(u: ref IcUi->Ui, id: int, enabled: int): int;
 
 	activatefocused: fn(u: ref IcUi->Ui): IcMsg->Msg;
 	handlekey: fn(u: ref IcUi->Ui, k: int): IcMsg->Msg;

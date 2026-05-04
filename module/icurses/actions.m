@@ -7,7 +7,7 @@ IcActions: module
 	Action: adt
 	{
 		key:    string;
-		target: string;
+		target: int;
 		cmd:    string;
 		label:  string;
 
@@ -19,18 +19,18 @@ IcActions: module
 
 	Actions: adt
 	{
-		id:    string;
+		id:    int;
 		items: array of Action;
 		last:  IcMsg->Msg;
 	};
 
 	init: fn();
 
-	new: fn(id: string): ref Actions;
+	new: fn(id: int): ref Actions;
 	clear: fn(a: ref Actions);
 
-	add: fn(a: ref Actions, key, target, cmd, label: string): int;
-	addargs: fn(a: ref Actions, key, target, cmd, label, sarg: string,
+	add: fn(a: ref Actions, key: string, target: int, cmd, label: string): int;
+	addargs: fn(a: ref Actions, key: string, target: int, cmd, label, sarg: string,
 		iarg0, iarg1, iarg2: int): int;
 
 	count: fn(a: ref Actions): int;

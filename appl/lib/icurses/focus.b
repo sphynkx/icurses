@@ -7,7 +7,7 @@ view: IcView;
 msg: IcMsg;
 ic: Icurses;
 
-focusmsg: fn(u: ref IcUi->Ui, id: string): IcMsg->Msg;
+focusmsg: fn(u: ref IcUi->Ui, id: int): IcMsg->Msg;
 
 init()
 {
@@ -32,17 +32,17 @@ init()
 	ic->init();
 }
 
-focusmsg(u: ref IcUi->Ui, id: string): IcMsg->Msg
+focusmsg(u: ref IcUi->Ui, id: int): IcMsg->Msg
 {
 	m: IcMsg->Msg;
 
-	if(u == nil || id == "")
+	if(u == nil || id < 0)
 		return msg->none();
 
-	u.status = "focus " + id;
+	u.status = "focus " + sys->sprint("%d", id);
 
-	m = msg->newmsg("focus", id, IcMsg->KindFocus, "focus.set");
-	m.sarg = id;
+	m = msg->newmsg(IcMsg->MsgNoNode, id, IcMsg->KindFocus, "focus.set");
+	m.sarg = sys->sprint("%d", id);
 	m.iarg0 = 0;
 	m.iarg1 = 0;
 	m.iarg2 = 0;
@@ -51,61 +51,61 @@ focusmsg(u: ref IcUi->Ui, id: string): IcMsg->Msg
 	return m;
 }
 
-focusid(u: ref IcUi->Ui): string
+focusid(u: ref IcUi->Ui): int
 {
 	if(u == nil || u.tree == nil)
-		return "";
+		return IcView->NoId;
 
 	return view->focusid(u.tree);
 }
 
-first(u: ref IcUi->Ui): string
+first(u: ref IcUi->Ui): int
 {
-	id: string;
+	id: int;
 
 	if(u == nil || u.tree == nil)
-		return "";
+		return IcView->NoId;
 
 	view->clearfocus(u.tree);
 	id = view->nextfocus(u.tree);
 
-	if(id != "")
-		u.status = "focus " + id;
+	if(id != IcView->NoId)
+		u.status = "focus " + sys->sprint("%d", id);
 
 	return id;
 }
 
-next(u: ref IcUi->Ui): string
+next(u: ref IcUi->Ui): int
 {
-	id: string;
+	id: int;
 
 	if(u == nil || u.tree == nil)
-		return "";
+		return IcView->NoId;
 
 	id = view->nextfocus(u.tree);
 
-	if(id != "")
-		u.status = "focus " + id;
+	if(id != IcView->NoId)
+		u.status = "focus " + sys->sprint("%d", id);
 
 	return id;
 }
 
-prev(u: ref IcUi->Ui): string
+prev(u: ref IcUi->Ui): int
 {
-	id: string;
+	id: int;
 
 	if(u == nil || u.tree == nil)
-		return "";
+		return IcView->NoId;
 
 	id = view->prevfocus(u.tree);
 
-	if(id != "")
-		u.status = "focus " + id;
+	if(id != IcView->NoId)
+		u.status = "focus " + sys->sprint("%d", id);
 
 	return id;
 }
 
-set(u: ref IcUi->Ui, id: string): int
+set(u: ref IcUi->Ui, id: int): int
 {
 	if(u == nil || u.tree == nil)
 		return -1;
@@ -113,7 +113,7 @@ set(u: ref IcUi->Ui, id: string): int
 	if(view->setfocus(u.tree, id) < 0)
 		return -1;
 
-	u.status = "focus " + id;
+	u.status = "focus " + sys->sprint("%d", id);
 	return 0;
 }
 
@@ -129,7 +129,7 @@ clear(u: ref IcUi->Ui)
 handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 {
 	nav: int;
-	id: string;
+	id: int;
 
 	if(u == nil || u.tree == nil)
 		return msg->none();
@@ -141,14 +141,14 @@ handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 	#
 	if(k == 9){
 		id = next(u);
-		if(id != "")
+		if(id != IcView->NoId)
 			return focusmsg(u, id);
 		return msg->none();
 	}
 
 	if(k == Icurses->Kbacktab){
 		id = prev(u);
-		if(id != "")
+		if(id != IcView->NoId)
 			return focusmsg(u, id);
 		return msg->none();
 	}
@@ -157,21 +157,21 @@ handlekey(u: ref IcUi->Ui, k: int): IcMsg->Msg
 
 	if(nav == Icurses->NavNext || nav == Icurses->NavRight || nav == Icurses->NavDown){
 		id = next(u);
-		if(id != "")
+		if(id != IcView->NoId)
 			return focusmsg(u, id);
 		return msg->none();
 	}
 
 	if(nav == Icurses->NavPrev || nav == Icurses->NavLeft || nav == Icurses->NavUp){
 		id = prev(u);
-		if(id != "")
+		if(id != IcView->NoId)
 			return focusmsg(u, id);
 		return msg->none();
 	}
 
 	if(nav == Icurses->NavHome){
 		id = first(u);
-		if(id != "")
+		if(id != IcView->NoId)
 			return focusmsg(u, id);
 		return msg->none();
 	}

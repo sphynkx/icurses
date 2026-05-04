@@ -53,7 +53,7 @@ wrapmeter(v: int): int
 	return v;
 }
 
-new(id: string): ref IcTask->Task
+new(id: int): ref IcTask->Task
 {
 	t: ref IcTask->Task;
 
@@ -125,7 +125,7 @@ setvalues(t: ref IcTask->Task, itemvalue, totalvalue, meter: int): int
 
 render(u: ref IcUi->Ui, t: ref IcTask->Task): int
 {
-	if(u == nil || t == nil || t.id == "")
+	if(u == nil || t == nil || t.id < 0)
 		return -1;
 
 	t.itemvalue = clamp(t.itemvalue, 0, 100);
@@ -165,7 +165,7 @@ tick(u: ref IcUi->Ui, t: ref IcTask->Task): IcMsg->Msg
 
 	t.ticks++;
 
-	if(u != nil && t.id != "")
+	if(u != nil && t.id >= 0)
 		ui->ticktaskdialog(u, t.id);
 
 	return makemsg(t, "task.tick");
@@ -209,7 +209,7 @@ summary(t: ref IcTask->Task): string
 		return "task: nil";
 
 	return "task " +
-		t.id +
+		sys->sprint("%d", t.id) +
 		": phase=" +
 		t.phase +
 		"; src=" +
