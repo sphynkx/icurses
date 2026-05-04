@@ -4079,25 +4079,279 @@ if(ui->start(u) < 0){
 
 ## <a id="13">13</a>. Темы, цвета и символы [&uarr;](#0)
 
+Визуальный слой `icurses` строится не только на layout и renderer logic, но и на terminal capabilities. Один и тот же интерфейс может выглядеть по-разному в зависимости от того, что умеет текущая консоль:
+
+- сколько цветов доступно;
+- есть ли truecolor;
+- поддерживается ли UTF-8;
+- безопасно ли использовать Unicode box-drawing glyphs;
+- насколько корректно отображаются широкие символы;
+- какой console backend используется.
+
+Именно поэтому в `icurses` есть отдельные модули для темы (`IcTheme`) и glyph policy (`IcGlyph`). Оба они инициализируются из terminal capabilities, которые фреймворк получает через `Icurses->consinfo()`.
+
+Практически это значит, что внешний вид приложения в `icurses` — не жестко прошитый набор символов и SGR-кодов, а результат политики, зависящей от терминала.
+
 ### <a id="13-1">13.1</a>. Цветовые возможности терминала [&uarr;](#0)
 
-Количество цветов, truecolor.
+Цветовая модель `icurses` основана на semantic attributes, а не на том, чтобы приложение вручную подставляло сырые ANSI SGR последовательности в каждый элемент.
+
+Для этого используется модуль `IcTheme`, который получает terminal capabilities и возвращает SGR body для конкретного UI attribute.
+
+Возможности терминала считываются из `consinfo`. В частности, там есть:
+
+- `colors` — количество доступных цветов;
+- `truecolor` — поддержка truecolor mode.
+
+На уровне реализации тема инициализируется так:
+
+```limbo
+init(ci: Icurses->ConsInfo)
+{
+	_colorcount = 16;
+	_truecolor = 0;
+
+	if(ci.colors > 0)
+		_colorcount = ci.colors;
+
+	if(ci.truecolor != 0)
+		_truecolor = 1;
+}
+```
+
+А renderer использует это при старте:
+
+```go
+ci = ic->consinfo();
+
+theme->init(ci);
+glyph->init(ci);
+
+CodeNormal = theme->sgr(IcTheme->AttrNormal);
+CodeWindow = theme->sgr(IcTheme->AttrWindow);
+CodeFrame = theme->sgr(IcTheme->AttrFrame);
+CodeTitle = theme->sgr(IcTheme->AttrTitle);
+CodeButton = theme->sgr(IcTheme->AttrButton);
+CodeFocus = theme->sgr(IcTheme->AttrFocus);
+CodeStatus = theme->sgr(IcTheme->AttrStatus);
+CodeScroll = theme->sgr(IcTheme->AttrScroll);
+CodeShadow = theme->sgr(IcTheme->AttrShadow);
+```
+
+Это означает, что приложение мыслит не категориями "какой ANSI color code поставить", а категориями:
+
+- normal;
+- window;
+- frame;
+- title;
+- button;
+- focus;
+- status;
+- scroll;
+- shadow.
+
+Если truecolor доступен, тема может вернуть полноценные `38;2;...;48;2;...` последовательности. Если нет — используется более консервативный fallback, например 16-color palette.
+
+Пример из `IcTheme`:
+
+```text
+truecolor:
+38;2;220;230;255;48;2;20;45;90
+
+16-color fallback:
+0;37;44
+```
+
+Это удобно по двум причинам:
+
+1. одна и та же semantic theme работает на разных терминалах;
+2. прикладной код не зависит от конкретной глубины цвета.
+
+Практическое правило: если приложению нужен "правильный внешний вид", лучше опираться на theme attributes, а не вручную печатать SGR strings.
 
 ### <a id="13-2">13.2</a>. UTF-8 и glyph policy [&uarr;](#0)
 
-Как выбирать ASCII/Unicode-профиль.
+Поддержка UTF-8 сама по себе еще не означает, что любые Unicode glyphs стоит использовать безоговорочно. Именно поэтому в `icurses` есть отдельная glyph policy.
+
+Ее задача — решить, какой профиль символов безопасно использовать на текущем terminal backend.
+
+В `IcGlyph` есть два базовых профиля:
+
+- `ProfileAscii`;
+- `ProfileUnicode`.
+
+Инициализация профиля происходит из `ConsInfo`:
+
+```limbo
+init(ci: Icurses->ConsInfo)
+{
+	#
+	# Default to Unicode when /dev/consinfo is available.
+	# This preserves the current good-looking terminal rendering.
+	#
+	_profile = ProfileUnicode;
+
+	#
+	# If consinfo is missing entirely, use the safest fallback.
+	#
+	if(ci.ok == 0)
+		_profile = ProfileAscii;
+
+	#
+	# Explicit source names can force ASCII fallback.
+	#
+	if(ci.source == "ascii" || ci.source == "dumb")
+		_profile = ProfileAscii;
+}
+```
+
+Из этого видно, что glyph policy зависит не только от "utf8=1/0", но и от источника консоли. Это важный момент: терминал может формально уметь UTF-8, но practically быть плохим местом для сложной Unicode-псевдографики.
+
+Поэтому правильная логика выбора такая:
+
+- Unicode-friendly terminal → Unicode profile;
+- unknown/dumb/ascii-like backend → ASCII fallback.
+
+Именно glyph policy определяет, какие рамки, block glyphs и scrollbar symbols будут реально использоваться в renderer-е.
+
+Практический вывод: приложение не должно само решать "печатать ли Unicode box chars". Эту политику уже должен задавать фреймворк через `IcGlyph`.
 
 ### <a id="13-3">13.3</a>. Frame glyphs [&uarr;](#0)
 
-Рамки ASCII, single, double.
+Рамки в `icurses` поддерживают несколько стилей:
+
+- ASCII;
+- single;
+- double.
+
+Эти стили задаются через `IcPaint`:
+
+```limbo
+FrameAscii:  con 0;
+FrameSingle: con 1;
+FrameDouble: con 2;
+```
+
+И именно эти значения intentionally match glyph styles:
+
+```limbo
+StyleAscii:  con 0;
+StyleSingle: con 1;
+StyleDouble: con 2;
+```
+
+В Unicode profile рамки выглядят так:
+
+#### Single
+
+```text
+h  = ─
+v  = │
+nw = ┌
+ne = ┐
+sw = └
+se = ┘
+```
+
+#### Double
+
+```text
+h  = ═
+v  = ║
+nw = ╔
+ne = ╗
+sw = ╚
+se = ╝
+```
+
+В ASCII fallback используются безопасные символы:
+
+```text
+h  = -
+v  = |
+nw = +
+ne = +
+sw = +
+se = +
+```
+
+Renderer получает glyphs не напрямую, а через `glyph->frame(style)`:
+
+```go
+f = glyph->frame(style);
+
+a[0] = f.h;
+a[1] = f.v;
+a[2] = f.nw;
+a[3] = f.ne;
+a[4] = f.sw;
+a[5] = f.se;
+```
+
+Это значит, что один и тот же вызов:
+
+```go
+ui->setframestyle(u, IcPaint->FrameDouble);
+```
+
+может в одном терминале привести к красивой Unicode double frame, а в другом — к более безопасному ASCII-like варианту, если policy вынужденно упадет в консервативный режим.
+
+Практически это и есть правильная модель: приложение выбирает semantic frame style, а glyph policy уже подбирает реальное представление.
 
 ### <a id="13-4">13.4</a>. Double-width символы [&uarr;](#0)
 
-CJK и другие символы, которые могут занимать две позиции.
+Double-width символы — это символы, которые на экране могут занимать не одну terminal cell, а две. Чаще всего сюда относятся:
+
+- CJK glyphs;
+- часть декоративных Unicode blocks;
+- некоторые совместимые wide codepoints.
+
+Для TUI это сложная тема, потому что renderer работает в модели "одна ячейка = один экранный слот". Если приложение помещает в такую ячейку символ, который реально отображается на две позиции, возможны проблемы:
+
+- visual misalignment;
+- ломание рамок;
+- смещение соседних ячеек;
+- неправильный diff between front/back buffers;
+- артефакты при clipping and redraw.
+
+Именно поэтому `icurses` разделяет:
+
+- безопасные box-drawing glyphs, выбранные через policy;
+- более рискованные декоративные/демо-символы, которые приложение должно использовать осознанно.
+
+В `matrix` demo это видно особенно хорошо: demo умеет работать с несколькими charset modes, включая CJK-like content, но при этом явно учитывает terminal policy и выбирает conservative default, если backend ненадежен.
+
+То есть проблема double-width символов не в том, что их "никогда нельзя использовать", а в том, что их нельзя считать безопасными universal UI glyphs.
+
+Практическое правило:
+
+- для рамок, scrollbar-ов и базовых UI элементов лучше использовать glyph policy фреймворка;
+- CJK and other wide glyphs лучше оставлять для специальных demo/effect/canvas сценариев;
+- если приложение активно использует wide chars, это нужно отдельно тестировать на конкретных host terminals.
 
 ### <a id="13-5">13.5</a>. Особенности Windows console [&uarr;](#0)
 
-Отличия MinGW/Windows console от Unix-like терминалов.
+Windows console и особенно hosted variants вроде MinGW console могут заметно отличаться от Unix-like terminal environments.
+
+Это различие проявляется в нескольких местах:
+
+- UTF-8 capability может быть объявлена, но фактическое отображение некоторых glyphs остается плохим;
+- truecolor behavior может отличаться;
+- alternate/app screen semantics могут быть иными;
+- mouse/input support может работать не так, как на Unix-like terminals;
+- font/rendering backend может ломать часть Unicode glyphs даже при nominally correct UTF-8.
+
+В `matrix` demo это зафиксировано прямо в комментариях: Windows MinGW console может сообщать `utf8=1`, но фактический console host/font все равно плохо отображает часть Matrix/CJK glyphs.
+
+Это и есть причина, почему glyph policy нельзя строить только на одном флаге UTF-8. Нужно учитывать `ci.source` и backend identity.
+
+Практический вывод для `icurses` такой:
+
+- Windows-like console нельзя считать автоматически "полноценным Unicode terminal";
+- лучше иметь conservative glyph fallback;
+- сложные декоративные glyph sets нужно использовать осторожно;
+- для core UI важно, чтобы приложение оставалось читаемым_
+
 
 ## <a id="14">14</a>. Типовые шаблоны приложений [&uarr;](#0)
 
