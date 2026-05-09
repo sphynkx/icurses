@@ -1,7 +1,7 @@
 #
 # 00_sceleton.b
 #
-# Minimal icurses application skeleton. v.2 - with mouse support
+# Minimal icurses application skeleton. v.1 w/o mouse support.
 #
 # This example is intended as a starting point for new applications.
 # It demonstrates the smallest complete program structure that:
@@ -9,7 +9,6 @@
 #   - creates a UI,
 #   - builds a minimal widget tree,
 #   - runs a step-based event loop,
-#   - handles keyboard and mouse activation,
 #   - exits cleanly and restores the terminal.
 #
 # The example is intentionally simple. It is useful as a template that can be
@@ -59,41 +58,6 @@ MainLayerId: con 10;
 MainWinId:   con 11;
 MainTextId:  con 12;
 BtnExitId:   con 13;
-
-#
-# Minimal mouse constants used by this example.
-#
-# IcUi returns mouse events as raw text in Step.status. For a tiny skeleton it is
-# useful to parse only the fields that are needed for button clicking instead
-# of pulling in a larger mouse abstraction.
-#
-MKindNone:   con 0;
-MKindMove:   con 1;
-MKindDown:   con 2;
-MKindUp:     con 3;
-MKindDrag:   con 4;
-MKindButton: con 5;
-
-MouseLeft: con 1;
-
-#
-# Absolute button rectangle used for mouse hit-testing.
-#
-# The Exit button is created inside MainWinId, so its local coordinates are not
-# enough for a mouse hit-test. Mouse events are delivered in terminal/screen
-# coordinates, therefore the example stores the absolute rectangle after layout.
-#
-BtnExitAbsX: int;
-BtnExitAbsY: int;
-BtnExitW: int;
-BtnExitH: int;
-
-#
-# Mouse support is optional.
-#
-# If /dev/emouse is unavailable, the skeleton falls back to keyboard-only mode.
-#
-mouseactive: int;
 
 #
 # Load required runtime modules.
@@ -167,138 +131,6 @@ leaveappscreen()
 }
 
 #
-# Parse a non-negative integer from a mouse event string.
-#
-# IcUi mouse events are encoded as:
-#
-#   kind x y buttons oldbuttons mods dx dy
-#
-# This helper is intentionally local to the skeleton so the example shows the
-# complete minimum needed to understand StepMouse.
-#
-parseintat(s: string, i: int): (int, int, int)
-{
-	v, ok: int;
-
-	v = 0;
-	ok = 0;
-
-	while(i < len s && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r'))
-		i++;
-
-	while(i < len s && s[i] >= '0' && s[i] <= '9'){
-		v = v * 10 + int s[i] - int '0';
-		i++;
-		ok = 1;
-	}
-
-	return (v, i, ok);
-}
-
-#
-# Return non-zero if a screen coordinate is inside the Exit button rectangle.
-#
-insideexitbutton(x, y: int): int
-{
-	if(x < BtnExitAbsX)
-		return 0;
-	if(y < BtnExitAbsY)
-		return 0;
-	if(x >= BtnExitAbsX + BtnExitW)
-		return 0;
-	if(y >= BtnExitAbsY + BtnExitH)
-		return 0;
-
-	return 1;
-}
-
-#
-# Centralized command handling.
-#
-# Keyboard activation and mouse activation both end up here. This keeps the
-# application behavior independent from the input source.
-#
-handlecmd(u: ref IcUi->Ui, cmd: string): int
-{
-	if(cmd == "app.exit")
-		return 1;
-
-	ui->draw(u);
-	return 0;
-}
-
-#
-# Handle one mouse step.
-#
-# The example deliberately implements only the smallest useful mouse behavior:
-#
-#   - left button down inside Exit only moves focus and updates status;
-#   - left button up inside Exit activates the same app.exit command as Enter;
-#   - all other mouse events are ignored.
-#
-# This is enough to demonstrate how mouse support is integrated into an
-# existing step loop without changing the UI framework.
-#
-handlemouse(u: ref IcUi->Ui, raw: string): int
-{
-	i, ok: int;
-	kind, x, y, buttons, oldbuttons, mods, dx, dy: int;
-
-	if(raw == "")
-		return 0;
-
-	i = 0;
-
-	(kind, i, ok) = parseintat(raw, i);
-	if(!ok)
-		return 0;
-
-	(x, i, ok) = parseintat(raw, i);
-	if(!ok)
-		return 0;
-
-	(y, i, ok) = parseintat(raw, i);
-	if(!ok)
-		return 0;
-
-	(buttons, i, ok) = parseintat(raw, i);
-	if(!ok)
-		return 0;
-
-	(oldbuttons, i, ok) = parseintat(raw, i);
-	if(!ok)
-		oldbuttons = 0;
-
-	(mods, i, ok) = parseintat(raw, i);
-	if(!ok)
-		mods = 0;
-
-	(dx, i, ok) = parseintat(raw, i);
-	if(!ok)
-		dx = 0;
-
-	(dy, i, ok) = parseintat(raw, i);
-	if(!ok)
-		dy = 0;
-
-	if(kind == MKindDown && (buttons & MouseLeft) != 0 && insideexitbutton(x, y)){
-		ui->setfocus(u, BtnExitId);
-		ui->setstatus(u, "Mouse down on Exit");
-		ui->draw(u);
-		return 0;
-	}
-
-	if(kind == MKindUp && (oldbuttons & MouseLeft) != 0 && insideexitbutton(x, y)){
-		ui->setfocus(u, BtnExitId);
-		ui->setstatus(u, "Mouse click on Exit");
-		ui->draw(u);
-		return handlecmd(u, "app.exit");
-	}
-
-	return 0;
-}
-
-#
 # Build the minimal UI tree.
 #
 # Parameters:
@@ -322,7 +154,6 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root: int;
 	winx, winy: int;
 	winw, winh: int;
-	btnx, btny: int;
 
 	#
 	# root is the id of the automatically created root container.
@@ -350,7 +181,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	# Reserve bottom rows for help and status text.
 	#
 	ui->setstatusrows(u, sh - 2, sh - 1);
-	ui->sethelp(u, " Tab changes focus | Enter or mouse click activates button | q/Esc exits ");
+	ui->sethelp(u, " Tab changes focus | Enter activates button | q/Esc exits ");
 
 	#
 	# Create the top-level application layer under the root.
@@ -384,68 +215,14 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	#   AppTarget - command target handled by the app loop,
 	#   "app.exit"- command string delivered on activation.
 	#
-	btnx = 14;
-	btny = 4;
-
-	if(ui->button(u, MainWinId, BtnExitId, btnx, btny, 10, 1, "Exit", "", AppTarget, "app.exit") < 0)
+	if(ui->button(u, MainWinId, BtnExitId, 14, 4, 10, 1, "Exit", "", AppTarget, "app.exit") < 0)
 		raise "fail:exit button";
-
-	#
-	# Store the absolute button rectangle for mouse hit-testing.
-	#
-	# The example keeps this calculation explicit to show the relationship
-	# between local widget coordinates and screen coordinates:
-	#
-	#   MainWinId is placed at winx,winy inside MainLayerId.
-	#   BtnExitId is placed at btnx,btny inside MainWinId.
-	#
-	# MainLayerId itself is at 0,0, so the absolute coordinates are:
-	#
-	#   winx + btnx, winy + btny.
-	#
-	BtnExitAbsX = winx + btnx;
-	BtnExitAbsY = winy + btny;
-	BtnExitW = 10;
-	BtnExitH = 1;
 
 	#
 	# Set initial focus and status text.
 	#
 	ui->setfocus(u, BtnExitId);
 	ui->setstatus(u, "Ready");
-}
-
-#
-# Start the UI, preferring mouse support but falling back to keyboard-only mode.
-#
-# Mouse must be enabled before ui->start(), because ui->start() opens the input
-# devices and spawns the reader processes. If /dev/emouse is not available, the
-# first start attempt fails; the skeleton then disables mouse and starts again.
-#
-startui(u: ref IcUi->Ui): int
-{
-	ui->enablemouse(u, 1);
-
-	if(ui->start(u) == 0){
-		mouseactive = ui->ismouseopen(u);
-		if(mouseactive)
-			ui->setstatus(u, "Ready: keyboard and mouse enabled");
-		else
-			ui->setstatus(u, "Ready: keyboard enabled");
-		ui->draw(u);
-		return 0;
-	}
-
-	ui->enablemouse(u, 0);
-
-	if(ui->start(u) == 0){
-		mouseactive = 0;
-		ui->setstatus(u, "Ready: mouse unavailable, keyboard-only mode");
-		ui->draw(u);
-		return 0;
-	}
-
-	return -1;
 }
 
 #
@@ -458,7 +235,6 @@ startui(u: ref IcUi->Ui): int
 #   - creates and builds the UI,
 #   - starts the UI event loop,
 #   - handles the Exit command,
-#   - handles a left mouse click on the Exit button,
 #   - closes the UI and restores the terminal.
 #
 run()
@@ -473,7 +249,6 @@ run()
 	#
 	out = sys->fildes(1);
 	appscreen = 0;
-	mouseactive = 0;
 
 	enterappscreen();
 
@@ -505,10 +280,7 @@ run()
 	#
 	# Start input processing and internal UI state.
 	#
-	# This skeleton tries to enable mouse support, but it remains usable if the
-	# host environment does not provide /dev/emouse.
-	#
-	if(startui(u) < 0){
+	if(ui->start(u) < 0){
 		ui->close(u);
 		leaveappscreen();
 		sys->print("cannot start ui\n");
@@ -522,8 +294,7 @@ run()
 	#
 	# The loop exits on:
 	#   - StepDone from the framework,
-	#   - command "app.exit" from the Exit button,
-	#   - left mouse click on the Exit button.
+	#   - command "app.exit" from the Exit button.
 	#
 	for(; !done;){
 		s = ui->step(u);
@@ -533,13 +304,16 @@ run()
 			done = 1;
 
 		IcUi->StepKey =>
-			done = handlecmd(u, s.msg.cmd);
+			if(s.msg.cmd == "app.exit")
+				done = 1;
+			else
+				ui->draw(u);
 
 		IcUi->StepTick =>
 			;
 
 		IcUi->StepMouse =>
-			done = handlemouse(u, s.status);
+			;
 
 		* =>
 			;
