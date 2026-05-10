@@ -39,12 +39,13 @@ appscreen: int;
 
 AppTarget: con 1;
 
+# Colors for elements
 MenuNormal: con "30;47";
 MenuFocus: con "30;46";
 MenuShadow: con "30;40";
 NavbarNormal: con "37;44";
 NavbarFocus: con "30;46";
-EditorText: con "0";
+EditorText: con "30;47";
 
 LayerId: con 10;
 WinId: con 11;
