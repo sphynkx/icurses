@@ -307,9 +307,9 @@ handlecmd(u: ref IcUi->Ui, cmd: string): int
 	if(cmd == "app.auto"){
 		auto = !auto;
 		if(auto)
-			ui->settext(u, BtnAutoId, "[ Stop ]");
+			ui->settext(u, BtnAutoId, "Stop");
 		else
-			ui->settext(u, BtnAutoId, "[ Auto ]");
+			ui->settext(u, BtnAutoId, "Auto");
 		refresh(u);
 		return 0;
 	}
