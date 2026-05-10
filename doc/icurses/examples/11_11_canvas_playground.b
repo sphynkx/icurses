@@ -247,25 +247,25 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, InspectorBoxId, ModeId, 2, 8, 13, "") < 0)
 		raise "fail:mode";
 
-	if(ui->button(u, WinId, BtnLeftId, 3, 19, 8, 1, "Left", "a", AppTarget, "app.left") < 0)
+	if(ui->button(u, WinId, BtnLeftId, 2, 19, 8, 1, "Left", "a", AppTarget, "app.left") < 0)
 		raise "fail:left";
 
-	if(ui->button(u, WinId, BtnRightId, 13, 19, 8, 1, "Right", "d", AppTarget, "app.right") < 0)
+	if(ui->button(u, WinId, BtnRightId, 12, 19, 10, 1, "Right", "d", AppTarget, "app.right") < 0)
 		raise "fail:right";
 
-	if(ui->button(u, WinId, BtnUpId, 23, 19, 8, 1, "Up", "w", AppTarget, "app.up") < 0)
+	if(ui->button(u, WinId, BtnUpId, 24, 19, 8, 1, "Up", "w", AppTarget, "app.up") < 0)
 		raise "fail:up";
 
-	if(ui->button(u, WinId, BtnDownId, 33, 19, 8, 1, "Down", "s", AppTarget, "app.down") < 0)
+	if(ui->button(u, WinId, BtnDownId, 34, 19, 10, 1, "Down", "s", AppTarget, "app.down") < 0)
 		raise "fail:down";
 
-	if(ui->button(u, WinId, BtnAutoId, 43, 19, 8, 1, "Auto", "m", AppTarget, "app.auto") < 0)
+	if(ui->button(u, WinId, BtnAutoId, 46, 19, 9, 1, "Auto", "m", AppTarget, "app.auto") < 0)
 		raise "fail:auto";
 
-	if(ui->button(u, WinId, BtnClearId, 53, 19, 10, 1, "Clear", "c", AppTarget, "app.clear") < 0)
+	if(ui->button(u, WinId, BtnClearId, 57, 19, 11, 1, "Clear", "c", AppTarget, "app.clear") < 0)
 		raise "fail:clear";
 
-	if(ui->button(u, WinId, BtnExitId, 65, 19, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 70, 19, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	px = CanvasW / 2;
