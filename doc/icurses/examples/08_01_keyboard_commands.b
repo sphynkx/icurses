@@ -162,7 +162,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 76, 18, " Keyboard commands ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 86, 18, " Keyboard commands ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, InfoId, 3, 2, 66, "Keyboard input is mapped to commands and visual key states.") < 0)
@@ -183,7 +183,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, KeyboardBoxId, KeyQId, 13, 3, 8, "") < 0)
 		raise "fail:key q";
 
-	if(ui->window(u, WinId, EventBoxId, 40, 4, 32, 6, " Last event ") < 0)
+	if(ui->window(u, WinId, EventBoxId, 40, 4, 40, 6, " Last event ") < 0)
 		raise "fail:event box";
 
 	if(ui->label(u, EventBoxId, LastKeyId, 2, 1, 26, "") < 0)
@@ -192,7 +192,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, EventBoxId, LastCmdId, 2, 2, 26, "") < 0)
 		raise "fail:last cmd";
 
-	if(ui->label(u, EventBoxId, CountId, 2, 3, 28, "") < 0)
+	if(ui->label(u, EventBoxId, CountId, 2, 3, 36, "") < 0)
 		raise "fail:count";
 
 	if(ui->button(u, WinId, BtnAId, 3, 13, 10, 1, "A", "a", AppTarget, "app.key.a") < 0)

@@ -240,7 +240,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 82, 20, " List with actions template ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 92, 20, " List with actions template ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 72, "A common pattern: browse a list and execute actions on the current row.") < 0)
@@ -252,37 +252,37 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->canvas(u, ListBoxId, ListCanvasId, 2, 1, Cols, Rows) < 0)
 		raise "fail:list canvas";
 
-	if(ui->window(u, WinId, ActionBoxId, 47, 4, 32, 10, " Action state ") < 0)
+	if(ui->window(u, WinId, ActionBoxId, 47, 4, 44, 10, " Action state ") < 0)
 		raise "fail:action box";
 
-	if(ui->label(u, ActionBoxId, CurrentId, 2, 2, 26, "") < 0)
+	if(ui->label(u, ActionBoxId, CurrentId, 2, 2, 40, "") < 0)
 		raise "fail:current";
 
-	if(ui->label(u, ActionBoxId, SelectedId, 2, 4, 26, "") < 0)
+	if(ui->label(u, ActionBoxId, SelectedId, 2, 4, 40, "") < 0)
 		raise "fail:selected";
 
-	if(ui->label(u, ActionBoxId, RunsId, 2, 6, 26, "") < 0)
+	if(ui->label(u, ActionBoxId, RunsId, 2, 6, 40, "") < 0)
 		raise "fail:runs";
 
-	if(ui->label(u, ActionBoxId, LastActionId, 2, 7, 26, "") < 0)
+	if(ui->label(u, ActionBoxId, LastActionId, 2, 7, 40, "") < 0)
 		raise "fail:last action";
 
-	if(ui->button(u, WinId, BtnPrevId, 3, 17, 8, 1, "Prev", "p", AppTarget, "app.prev") < 0)
+	if(ui->button(u, WinId, BtnPrevId, 3, 17, 9, 1, "Prev", "p", AppTarget, "app.prev") < 0)
 		raise "fail:prev";
 
-	if(ui->button(u, WinId, BtnNextId, 13, 17, 8, 1, "Next", "n", AppTarget, "app.next") < 0)
+	if(ui->button(u, WinId, BtnNextId, 14, 17, 9, 1, "Next", "n", AppTarget, "app.next") < 0)
 		raise "fail:next";
 
-	if(ui->button(u, WinId, BtnRunId, 23, 17, 8, 1, "Run", "r", AppTarget, "app.run") < 0)
+	if(ui->button(u, WinId, BtnRunId, 25, 17, 8, 1, "Run", "r", AppTarget, "app.run") < 0)
 		raise "fail:run";
 
-	if(ui->button(u, WinId, BtnDisableId, 33, 17, 12, 1, "Disable", "d", AppTarget, "app.disable") < 0)
+	if(ui->button(u, WinId, BtnDisableId, 35, 17, 12, 1, "Disable", "d", AppTarget, "app.disable") < 0)
 		raise "fail:disable";
 
-	if(ui->button(u, WinId, BtnDeleteId, 47, 17, 10, 1, "Delete", "x", AppTarget, "app.delete") < 0)
+	if(ui->button(u, WinId, BtnDeleteId, 49, 17, 11, 1, "Delete", "x", AppTarget, "app.delete") < 0)
 		raise "fail:delete";
 
-	if(ui->button(u, WinId, BtnExitId, 59, 17, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 62, 17, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	cursor = 0;

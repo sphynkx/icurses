@@ -245,7 +245,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 80, 20, " History popup ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 86, 20, " History popup ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 70, "History popup stores submitted input values and applies them later.") < 0)
@@ -278,13 +278,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, PopupWinId, PopupLine5Id, 2, 5, 26, "") < 0)
 		raise "fail:popup line 5";
 
-	if(ui->window(u, WinId, InfoBoxId, 43, 4, 34, 11, " History inspector ") < 0)
+	if(ui->window(u, WinId, InfoBoxId, 43, 4, 40, 11, " History inspector ") < 0)
 		raise "fail:info box";
 
 	if(ui->label(u, InfoBoxId, SummaryId, 2, 1, 28, "") < 0)
 		raise "fail:summary";
 
-	if(ui->label(u, InfoBoxId, CurrentId, 2, 3, 28, "") < 0)
+	if(ui->label(u, InfoBoxId, CurrentId, 2, 3, 36, "") < 0)
 		raise "fail:current";
 
 	if(ui->label(u, InfoBoxId, SubmitCountId, 2, 5, 28, "") < 0)
@@ -293,25 +293,25 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, InfoBoxId, ModeId, 2, 7, 28, "") < 0)
 		raise "fail:mode";
 
-	if(ui->button(u, WinId, BtnEditId, 3, 18, 8, 1, "Edit", "e", AppTarget, "app.edit") < 0)
+	if(ui->button(u, WinId, BtnEditId, 3, 18, 9, 1, "Edit", "e", AppTarget, "app.edit") < 0)
 		raise "fail:edit";
 
-	if(ui->button(u, WinId, BtnDoneId, 13, 18, 8, 1, "Done", "d", AppTarget, "app.done") < 0)
+	if(ui->button(u, WinId, BtnDoneId, 14, 18, 9, 1, "Done", "d", AppTarget, "app.done") < 0)
 		raise "fail:done";
 
-	if(ui->button(u, WinId, BtnPrevId, 23, 18, 8, 1, "Prev", "p", AppTarget, "app.prev") < 0)
+	if(ui->button(u, WinId, BtnPrevId, 25, 18, 9, 1, "Prev", "p", AppTarget, "app.prev") < 0)
 		raise "fail:prev";
 
-	if(ui->button(u, WinId, BtnNextId, 33, 18, 8, 1, "Next", "n", AppTarget, "app.next") < 0)
+	if(ui->button(u, WinId, BtnNextId, 36, 18, 9, 1, "Next", "n", AppTarget, "app.next") < 0)
 		raise "fail:next";
 
-	if(ui->button(u, WinId, BtnApplyId, 43, 18, 10, 1, "Apply", "a", AppTarget, "app.apply") < 0)
+	if(ui->button(u, WinId, BtnApplyId, 47, 18, 10, 1, "Apply", "a", AppTarget, "app.apply") < 0)
 		raise "fail:apply";
 
-	if(ui->button(u, WinId, BtnSubmitId, 55, 18, 10, 1, "Submit", "s", AppTarget, "app.submit") < 0)
+	if(ui->button(u, WinId, BtnSubmitId, 59, 18, 10, 1, "Submit", "s", AppTarget, "app.submit") < 0)
 		raise "fail:submit";
 
-	if(ui->button(u, WinId, BtnExitId, 67, 18, 8, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 71, 18, 8, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	hist = array[] of {

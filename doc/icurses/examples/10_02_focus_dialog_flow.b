@@ -218,7 +218,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 82, 22, " Focus dialog flow ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 86, 22, " Focus dialog flow ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 72, "Temporary UI layers should move focus inside and restore it when closed.") < 0)
@@ -239,7 +239,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, MainBoxId, MainRouteId, 2, 5, 30, "") < 0)
 		raise "fail:main route";
 
-	if(ui->window(u, WinId, FocusMapId, 42, 4, 36, 8, " Focus route ") < 0)
+	if(ui->window(u, WinId, FocusMapId, 42, 4, 40, 8, " Focus route ") < 0)
 		raise "fail:focus map";
 
 	if(ui->label(u, FocusMapId, MapMainId, 2, 1, 30, "") < 0)
@@ -251,7 +251,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, FocusMapId, MapRestoreId, 2, 3, 30, "") < 0)
 		raise "fail:map restore";
 
-	if(ui->label(u, FocusMapId, MapStateId, 2, 5, 30, "") < 0)
+	if(ui->label(u, FocusMapId, MapStateId, 2, 5, 36, "") < 0)
 		raise "fail:map state";
 
 	if(ui->window(u, WinId, DialogPanelId, 22, 12, 40, 7, " Dialog ") < 0)

@@ -186,7 +186,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, ExtraGroupId, ExtraLine1Id, 0, 0, 28, "This is a nested group.") < 0)
 		raise "fail:extra line 1";
 
-	if(ui->label(u, ExtraGroupId, ExtraLine2Id, 0, 1, 28, "It can be hidden as one node.") < 0)
+	if(ui->label(u, ExtraGroupId, ExtraLine2Id, 0, 1, 29, "It can be hidden as one node.") < 0)
 		raise "fail:extra line 2";
 
 	ui->setfocus(u, BtnToggleId);

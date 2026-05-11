@@ -225,7 +225,7 @@ build(u: ref IcUi->Ui)
 	if(usableh < 1)
 		usableh = ch;
 
-	w = 72;
+	w = 75;
 	if(w > cw)
 		w = cw;
 	if(w < 1)

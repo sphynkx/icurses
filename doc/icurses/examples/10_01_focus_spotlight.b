@@ -184,7 +184,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 82);
+	x = center(sw, 100);
 	y = center(sh, 21);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -193,7 +193,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 82, 21, " Focus spotlight ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 100, 21, " Focus spotlight ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 72, "Focus is the active node that receives keyboard activation.") < 0)
@@ -238,13 +238,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->button(u, CardCId, BtnActionCId, 2, 2, 12, 1, "Run C", "", AppTarget, "app.action.c") < 0)
 		raise "fail:action c";
 
-	if(ui->window(u, WinId, InspectorBoxId, 48, 4, 31, 11, " Focus inspector ") < 0)
+	if(ui->window(u, WinId, InspectorBoxId, 48, 4, 45, 11, " Focus inspector ") < 0)
 		raise "fail:inspector";
 
 	if(ui->label(u, InspectorBoxId, FocusNodeId, 2, 1, 27, "") < 0)
 		raise "fail:focus node";
 
-	if(ui->label(u, InspectorBoxId, FocusRoleId, 2, 3, 27, "") < 0)
+	if(ui->label(u, InspectorBoxId, FocusRoleId, 2, 3, 41, "") < 0)
 		raise "fail:focus role";
 
 	if(ui->label(u, InspectorBoxId, ActivationId, 2, 6, 27, "") < 0)

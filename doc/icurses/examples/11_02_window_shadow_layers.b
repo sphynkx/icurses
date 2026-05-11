@@ -213,7 +213,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, MainWinId, MainTextId, 3, 4, 68, "shadowwindow() creates both shadow and window nodes.") < 0)
 		raise "fail:main text";
 
-	if(ui->window(u, MainWinId, TreeBoxId, 3, 6, 38, 12, " Tree nodes ") < 0)
+	if(ui->window(u, MainWinId, TreeBoxId, 3, 6, 42, 12, " Tree nodes ") < 0)
 		raise "fail:tree box";
 
 	if(ui->label(u, TreeBoxId, TreeRootId, 2, 1, 32, "root") < 0)
@@ -231,25 +231,25 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, TreeBoxId, TreeDetailLayerId, 4, 6, 32, "") < 0)
 		raise "fail:tree detail layer";
 
-	if(ui->label(u, TreeBoxId, TreeDetailShadowId, 4, 7, 32, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeDetailShadowId, 4, 7, 36, "") < 0)
 		raise "fail:tree detail shadow";
 
 	if(ui->label(u, TreeBoxId, TreeDetailWinId, 4, 8, 32, "") < 0)
 		raise "fail:tree detail win";
 
-	if(ui->group(u, MainWinId, DetailLayerId, 44, 7, 30, 10) < 0)
+	if(ui->group(u, MainWinId, DetailLayerId, 45, 7, 30, 10) < 0)
 		raise "fail:detail layer";
 
-	if(ui->shadowwindow(u, DetailLayerId, DetailShadowId, DetailWinId, 1, 1, 26, 7, " Details ", 1, 1) < 0)
+	if(ui->shadowwindow(u, DetailLayerId, DetailShadowId, DetailWinId, 1, 1, 28, 7, " Details ", 1, 1) < 0)
 		raise "fail:detail shadowwindow";
 
-	if(ui->label(u, DetailWinId, DetailText1Id, 3, 2, 18, "This is a window.") < 0)
+	if(ui->label(u, DetailWinId, DetailText1Id, 3, 2, 20, "This is a window.") < 0)
 		raise "fail:detail text 1";
 
-	if(ui->label(u, DetailWinId, DetailText2Id, 3, 3, 18, "It has a shadow.") < 0)
+	if(ui->label(u, DetailWinId, DetailText2Id, 3, 3, 20, "It has a shadow.") < 0)
 		raise "fail:detail text 2";
 
-	if(ui->label(u, DetailWinId, DetailText3Id, 3, 4, 18, "Layer toggles both.") < 0)
+	if(ui->label(u, DetailWinId, DetailText3Id, 3, 4, 20, "Layer toggles both.") < 0)
 		raise "fail:detail text 3";
 
 	if(ui->button(u, MainWinId, BtnDetailsId, 3, 19, 18, 1, "Hide Details", "s", AppTarget, "app.details") < 0)

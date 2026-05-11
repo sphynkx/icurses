@@ -190,43 +190,43 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 82, 21, " Focusable elements ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 88, 21, " Focusable elements ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 72, "The tree contains many nodes, but focus navigation uses only focusable controls.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 80, "The tree contains many nodes, but focus navigation uses only focusable controls.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, TreeBoxId, 3, 4, 38, 11, " Tree nodes ") < 0)
+	if(ui->window(u, WinId, TreeBoxId, 3, 4, 42, 11, " Tree nodes ") < 0)
 		raise "fail:tree box";
 
-	if(ui->label(u, TreeBoxId, TreeRootId, 2, 1, 32, "root") < 0)
+	if(ui->label(u, TreeBoxId, TreeRootId, 2, 1, 36, "root") < 0)
 		raise "fail:tree root";
 
-	if(ui->label(u, TreeBoxId, TreeWindowId, 4, 2, 32, "`-- window/group nodes") < 0)
+	if(ui->label(u, TreeBoxId, TreeWindowId, 4, 2, 36, "`-- window/group nodes") < 0)
 		raise "fail:tree window";
 
-	if(ui->label(u, TreeBoxId, TreeLabelId, 4, 3, 32, "`-- LabelId      not focusable") < 0)
+	if(ui->label(u, TreeBoxId, TreeLabelId, 4, 3, 36, "`-- LabelId      not focusable") < 0)
 		raise "fail:tree label";
 
-	if(ui->label(u, TreeBoxId, TreeCanvasId, 4, 4, 32, "`-- CanvasId     not focusable") < 0)
+	if(ui->label(u, TreeBoxId, TreeCanvasId, 4, 4, 36, "`-- CanvasId     not focusable") < 0)
 		raise "fail:tree canvas";
 
-	if(ui->label(u, TreeBoxId, TreeButtonAId, 4, 5, 32, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeButtonAId, 4, 5, 36, "") < 0)
 		raise "fail:tree button a";
 
-	if(ui->label(u, TreeBoxId, TreeButtonBId, 4, 6, 32, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeButtonBId, 4, 6, 36, "") < 0)
 		raise "fail:tree button b";
 
-	if(ui->label(u, TreeBoxId, TreeButtonCId, 4, 7, 32, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeButtonCId, 4, 7, 36, "") < 0)
 		raise "fail:tree button c";
 
-	if(ui->canvas(u, WinId, CanvasId, 45, 4, 30, 3) < 0)
+	if(ui->canvas(u, WinId, CanvasId, 49, 4, 30, 3) < 0)
 		raise "fail:canvas";
 
 	ui->canvasclear(u, CanvasId, ".", "0");
 	ui->canvasputs(u, CanvasId, 2, 1, "canvas is visible, not focus target", "0");
 
-	if(ui->window(u, WinId, FocusBoxId, 45, 8, 30, 7, " Focus chain ") < 0)
+	if(ui->window(u, WinId, FocusBoxId, 49, 8, 30, 7, " Focus chain ") < 0)
 		raise "fail:focus box";
 
 	if(ui->label(u, FocusBoxId, ChainAId, 2, 1, 24, "") < 0)

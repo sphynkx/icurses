@@ -181,13 +181,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, CheckBoxId, CheckTitleId, 2, 1, 18, "Multi selection") < 0)
 		raise "fail:check title";
 
-	if(control->checkbox(u, CheckBoxId, CheckLogId, 2, 3, 18, "Log events", "l", AppTarget, "app.check.log", 1) < 0)
+	if(control->checkbox(u, CheckBoxId, CheckLogId, 2, 3, 20, "Log events", "l", AppTarget, "app.check.log", 1) < 0)
 		raise "fail:check log";
 
-	if(control->checkbox(u, CheckBoxId, CheckFastId, 2, 4, 18, "Fast mode", "f", AppTarget, "app.check.fast", 0) < 0)
+	if(control->checkbox(u, CheckBoxId, CheckFastId, 2, 4, 20, "Fast mode", "f", AppTarget, "app.check.fast", 0) < 0)
 		raise "fail:check fast";
 
-	if(control->checkbox(u, CheckBoxId, CheckSafeId, 2, 5, 18, "Safe mode", "s", AppTarget, "app.check.safe", 1) < 0)
+	if(control->checkbox(u, CheckBoxId, CheckSafeId, 2, 5, 20, "Safe mode", "s", AppTarget, "app.check.safe", 1) < 0)
 		raise "fail:check safe";
 
 	if(ui->window(u, WinId, RadioGroupId, 30, 4, 22, 9, " Radio group ") < 0)
@@ -208,10 +208,10 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, WinId, SwitchBoxId, 55, 4, 24, 9, " Switches ") < 0)
 		raise "fail:switch box";
 
-	if(ui->label(u, SwitchBoxId, SwitchTitleId, 2, 1, 18, "On/off state") < 0)
+	if(ui->label(u, SwitchBoxId, SwitchTitleId, 2, 1, 20, "On/off state") < 0)
 		raise "fail:switch title";
 
-	if(control->switchbox(u, SwitchBoxId, SwitchNetworkId, 2, 3, 18, "Network", "n", AppTarget, "app.switch.network", 1) < 0)
+	if(control->switchbox(u, SwitchBoxId, SwitchNetworkId, 2, 3, 20, "Network", "n", AppTarget, "app.switch.network", 1) < 0)
 		raise "fail:switch network";
 
 	if(control->switchbox(u, SwitchBoxId, SwitchCacheId, 2, 5, 18, "Cache", "c", AppTarget, "app.switch.cache", 0) < 0)
@@ -226,7 +226,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, StateBoxId, StateLine2Id, 2, 2, 70, "") < 0)
 		raise "fail:state line 2";
 
-	if(ui->label(u, StateBoxId, StateLine3Id, 2, 3, 70, "") < 0)
+	if(ui->label(u, StateBoxId, StateLine3Id, 2, 3, 30, "") < 0)
 		raise "fail:state line 3";
 
 	if(ui->button(u, WinId, BtnExitId, 3, 18, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)

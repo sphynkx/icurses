@@ -369,7 +369,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, 76, 20, " Confirmation dialog template ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 66, "Destructive actions should be isolated behind a modal confirm layer.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 68, "Destructive actions should be isolated behind a modal confirm layer.") < 0)
 		raise "fail:title";
 
 	if(ui->window(u, WinId, StateBoxId, 3, 4, 32, 8, " Application state ") < 0)
@@ -420,13 +420,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, DialogWinId, DialogText1Id, 4, 2, 30, "Delete the selected item?") < 0)
 		raise "fail:dialog text 1";
 
-	if(ui->label(u, DialogWinId, DialogText2Id, 4, 3, 30, "Only Yes or No is accepted here.") < 0)
+	if(ui->label(u, DialogWinId, DialogText2Id, 4, 3, 32, "Only Yes or No is accepted here.") < 0)
 		raise "fail:dialog text 2";
 
-	if(ui->button(u, DialogWinId, BtnYesId, 7, 6, 10, 1, "Yes", "y", AppTarget, "app.confirm.yes") < 0)
+	if(ui->button(u, DialogWinId, BtnYesId, 9, 6, 8, 1, "Yes", "y", AppTarget, "app.confirm.yes") < 0)
 		raise "fail:yes";
 
-	if(ui->button(u, DialogWinId, BtnNoId, 22, 6, 10, 1, "No", "n", AppTarget, "app.confirm.no") < 0)
+	if(ui->button(u, DialogWinId, BtnNoId, 23, 6, 8, 1, "No", "n", AppTarget, "app.confirm.no") < 0)
 		raise "fail:no";
 
 	items = array[] of {

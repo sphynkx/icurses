@@ -181,7 +181,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 
 	root = ui->rootid(u);
 
-	w = 78;
+	w = 82;
 	h = 20;
 	x = center(sw, w);
 	y = center(sh, h);
@@ -195,7 +195,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, w, h, " Stable ids ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 68, "Each visible card has stable integer ids. Buttons update target labels by id.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 78, "Each visible card has stable integer ids. Buttons update target labels by id.") < 0)
 		raise "fail:title";
 
 	if(ui->label(u, WinId, RouteId, 3, 4, 68, "Example: Update A -> CardATextId=102 and CardACountId=103") < 0)
@@ -208,19 +208,19 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, WinId, StatusId, 3, 14, 68, "") < 0)
 		raise "fail:status";
 
-	if(ui->button(u, WinId, BtnUpdateAId, 3, 17, 12, 1, "Update A", "a", AppTarget, "app.update.a") < 0)
+	if(ui->button(u, WinId, BtnUpdateAId, 4, 17, 13, 1, "Update A", "a", AppTarget, "app.update.a") < 0)
 		raise "fail:update a";
 
-	if(ui->button(u, WinId, BtnUpdateBId, 17, 17, 12, 1, "Update B", "b", AppTarget, "app.update.b") < 0)
+	if(ui->button(u, WinId, BtnUpdateBId, 20, 17, 13, 1, "Update B", "b", AppTarget, "app.update.b") < 0)
 		raise "fail:update b";
 
-	if(ui->button(u, WinId, BtnUpdateCId, 31, 17, 12, 1, "Update C", "c", AppTarget, "app.update.c") < 0)
+	if(ui->button(u, WinId, BtnUpdateCId, 36, 17, 13, 1, "Update C", "c", AppTarget, "app.update.c") < 0)
 		raise "fail:update c";
 
-	if(ui->button(u, WinId, BtnResetId, 45, 17, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
+	if(ui->button(u, WinId, BtnResetId, 52, 17, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
 		raise "fail:reset";
 
-	if(ui->button(u, WinId, BtnExitId, 57, 17, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 65, 17, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	ui->setfocus(u, BtnUpdateAId);

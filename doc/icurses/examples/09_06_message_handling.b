@@ -179,7 +179,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 80);
+	x = center(sw, 100);
 	y = center(sh, 20);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -188,7 +188,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 80, 20, " Message handling ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 90, 20, " Message handling ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 70, "A handler receives a message, classifies it, applies action, and redraws.") < 0)
@@ -209,16 +209,16 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, PipelineId, StepRedrawId, 2, 4, 24, "") < 0)
 		raise "fail:redraw";
 
-	if(ui->window(u, WinId, FrameworkPanelId, 37, 4, 38, 5, " Framework command target ") < 0)
+	if(ui->window(u, WinId, FrameworkPanelId, 37, 4, 46, 5, " Framework command target ") < 0)
 		raise "fail:framework panel";
 
 	if(ui->label(u, FrameworkPanelId, FrameworkTextId, 2, 2, 32, "") < 0)
 		raise "fail:framework text";
 
-	if(ui->window(u, WinId, AppPanelId, 37, 10, 38, 5, " Application handler ") < 0)
+	if(ui->window(u, WinId, AppPanelId, 37, 10, 46, 5, " Application handler ") < 0)
 		raise "fail:app panel";
 
-	if(ui->label(u, AppPanelId, AppTextId, 2, 1, 32, "") < 0)
+	if(ui->label(u, AppPanelId, AppTextId, 2, 1, 42, "") < 0)
 		raise "fail:app text";
 
 	if(ui->label(u, AppPanelId, AppCountId, 2, 2, 32, "") < 0)

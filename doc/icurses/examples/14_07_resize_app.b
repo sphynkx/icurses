@@ -52,6 +52,7 @@ InfoBoxId: con 50;
 Info1Id: con 51;
 Info2Id: con 52;
 Info3Id: con 53;
+Info4Id: con 54;
 
 BtnWideId: con 60;
 BtnNarrowId: con 61;
@@ -163,7 +164,8 @@ refresh(u: ref IcUi->Ui)
 
 	ui->settext(u, Info1Id, "Active layout profile: " + layoutname());
 	ui->settext(u, Info2Id, "Switches: " + sys->sprint("%d", switches));
-	ui->settext(u, Info3Id, "Pattern: detect geometry, then rebuild or switch layout.");
+	ui->settext(u, Info3Id, "Pattern: detect geometry,");
+	ui->settext(u, Info4Id, "then rebuild or switch layout.");
 
 	ui->setstatus(u, "resize template: " + layoutname());
 	ui->draw(u);
@@ -181,7 +183,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 84);
+	x = center(sw, 100);
 	y = center(sh, 22);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -190,7 +192,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, RootLayerId, 0, 0, sw, sh) < 0)
 		raise "fail:root layer";
 
-	if(ui->window(u, RootLayerId, WinId, x, y, 84, 22, " Resize-aware application template ") < 0)
+	if(ui->window(u, RootLayerId, WinId, x, y, 98, 22, " Resize-aware application template ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 74, "A resize-aware app separates application state from layout profile.") < 0)
@@ -235,7 +237,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, TallBoxId, TallThreeId, 2, 6, 18, "3. actions") < 0)
 		raise "fail:tall three";
 
-	if(ui->window(u, WinId, InfoBoxId, 60, 4, 21, 10, " State ") < 0)
+	if(ui->window(u, WinId, InfoBoxId, 60, 4, 34, 10, " State ") < 0)
 		raise "fail:info box";
 
 	if(ui->label(u, InfoBoxId, Info1Id, 2, 2, 17, "") < 0)
@@ -244,8 +246,11 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, InfoBoxId, Info2Id, 2, 4, 17, "") < 0)
 		raise "fail:info 2";
 
-	if(ui->label(u, InfoBoxId, Info3Id, 2, 6, 17, "") < 0)
+	if(ui->label(u, InfoBoxId, Info3Id, 2, 6, 30, "") < 0)
 		raise "fail:info 3";
+
+	if(ui->label(u, InfoBoxId, Info4Id, 2, 7, 30, "") < 0)
+		raise "fail:info 4";
 
 	if(ui->button(u, WinId, BtnWideId, 3, 19, 10, 1, "Wide", "w", AppTarget, "app.wide") < 0)
 		raise "fail:wide";

@@ -222,10 +222,10 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 80, 21, " Settings form template ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 84, 21, " Settings form template ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 70, "Form state is stored in application variables and reflected in preview UI.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 78, "Form state is stored in application variables and reflected in preview UI.") < 0)
 		raise "fail:title";
 
 	if(ui->window(u, WinId, FormBoxId, 3, 4, 34, 11, " Settings ") < 0)
@@ -246,7 +246,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, FormBoxId, DirtyId, 2, 8, 28, "") < 0)
 		raise "fail:dirty";
 
-	if(ui->window(u, WinId, PreviewBoxId, 41, 4, 36, 11, " Live preview ") < 0)
+	if(ui->window(u, WinId, PreviewBoxId, 41, 4, 40, 11, " Live preview ") < 0)
 		raise "fail:preview box";
 
 	if(ui->canvas(u, PreviewBoxId, PreviewCanvasId, 2, 1, 30, 7) < 0)
@@ -255,25 +255,25 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, PreviewBoxId, Preview1Id, 2, 8, 30, "") < 0)
 		raise "fail:preview 1";
 
-	if(ui->label(u, PreviewBoxId, Preview2Id, 2, 9, 30, "") < 0)
+	if(ui->label(u, PreviewBoxId, Preview2Id, 2, 9, 36, "") < 0)
 		raise "fail:preview 2";
 
 	if(ui->button(u, WinId, BtnThemeId, 3, 18, 10, 1, "Theme", "t", AppTarget, "app.theme") < 0)
 		raise "fail:theme button";
 
-	if(ui->button(u, WinId, BtnAutosaveId, 15, 18, 12, 1, "Autosave", "a", AppTarget, "app.autosave") < 0)
+	if(ui->button(u, WinId, BtnAutosaveId, 15, 18, 13, 1, "Autosave", "a", AppTarget, "app.autosave") < 0)
 		raise "fail:autosave button";
 
-	if(ui->button(u, WinId, BtnLevelId, 29, 18, 10, 1, "Level", "l", AppTarget, "app.level") < 0)
+	if(ui->button(u, WinId, BtnLevelId, 30, 18, 10, 1, "Level", "l", AppTarget, "app.level") < 0)
 		raise "fail:level button";
 
-	if(ui->button(u, WinId, BtnApplyId, 41, 18, 10, 1, "Apply", "p", AppTarget, "app.apply") < 0)
+	if(ui->button(u, WinId, BtnApplyId, 42, 18, 10, 1, "Apply", "p", AppTarget, "app.apply") < 0)
 		raise "fail:apply";
 
-	if(ui->button(u, WinId, BtnResetId, 53, 18, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
+	if(ui->button(u, WinId, BtnResetId, 54, 18, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
 		raise "fail:reset";
 
-	if(ui->button(u, WinId, BtnExitId, 65, 18, 8, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 66, 18, 9, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	resetdefaults();

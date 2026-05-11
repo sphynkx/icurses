@@ -315,13 +315,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, MainWinId, MainTextId, 4, 2, 34, "Welcome to Inferno!!") < 0)
 		raise "fail:main label";
 
-	if(ui->group(u, MainWinId, MainButtonsId, 8, 5, 28, 1) < 0)
+	if(ui->group(u, MainWinId, MainButtonsId, 10, 5, 28, 1) < 0)
 		raise "fail:main buttons group";
 
-	if(ui->button(u, MainButtonsId, BtnOkId, 0, 0, 10, 1, "OK", "", AppTarget, "app.ok") < 0)
+	if(ui->button(u, MainButtonsId, BtnOkId, 0, 0, 6, 1, "OK", "", AppTarget, "app.ok") < 0)
 		raise "fail:ok button";
 
-	if(ui->button(u, MainButtonsId, BtnHelpId, 14, 0, 10, 1, "Help", "", AppTarget, "app.help") < 0)
+	if(ui->button(u, MainButtonsId, BtnHelpId, 14, 0, 8, 1, "Help", "", AppTarget, "app.help") < 0)
 		raise "fail:help button";
 
 	if(ui->group(u, AppLayerId, HelpLayerId, 0, 0, appw, apph) < 0)

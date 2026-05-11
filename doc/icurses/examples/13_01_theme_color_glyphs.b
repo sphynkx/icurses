@@ -403,7 +403,7 @@ refresh(u: ref IcUi->Ui)
 
 	ui->settext(u, DoubleWidthId, "Double-width policy: avoid wide glyphs in fixed cell layouts.");
 	ui->settext(u, WindowsId, "Windows console note: VT=" + booltext(ci.vt) + " truecolor=" + booltext(ci.truecolor));
-	ui->settext(u, FallbackId, "Fallbacks: ASCII frames and 16-color SGR keep UI readable.");
+	ui->settext(u, FallbackId, " Fallbacks: ASCII frames and 16-color SGR keep UI readable.");
 
 	if(showeffects)
 		ui->setstatus(u, "theme view: effect attributes | frame=" + framestylename() + " | palette=" + palettename());
@@ -427,7 +427,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 84, 23, " Theme, colors and glyphs ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 94, 23, " Theme, colors and glyphs ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 74, "Theme and glyph policy are selected from terminal capabilities.") < 0)
@@ -451,10 +451,10 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, CapsBoxId, Caps5Id, 2, 6, 34, "") < 0)
 		raise "fail:caps 5";
 
-	if(ui->window(u, WinId, ThemeBoxId, 46, 4, 35, 12, " Theme swatches ") < 0)
+	if(ui->window(u, WinId, ThemeBoxId, 46, 4, 46, 12, " Theme swatches ") < 0)
 		raise "fail:theme box";
 
-	if(ui->canvas(u, ThemeBoxId, ThemeCanvasId, 2, 1, 30, 9) < 0)
+	if(ui->canvas(u, ThemeBoxId, ThemeCanvasId, 2, 1, 42, 9) < 0)
 		raise "fail:theme canvas";
 
 	if(ui->window(u, WinId, FrameBoxId, 3, 13, 40, 7, " Glyphs ") < 0)
@@ -475,16 +475,16 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, FrameBoxId, ScrollBlockId, 2, 6, 34, "") < 0)
 		raise "fail:scroll block";
 
-	if(ui->window(u, WinId, TextBoxId, 46, 17, 35, 4, " Text policy ") < 0)
+	if(ui->window(u, WinId, TextBoxId, 46, 17, 46, 4, " Text policy ") < 0)
 		raise "fail:text box";
 
-	if(ui->label(u, TextBoxId, DoubleWidthId, 2, 1, 29, "") < 0)
+	if(ui->label(u, TextBoxId, DoubleWidthId, 2, 1, 39, "") < 0)
 		raise "fail:double width";
 
-	if(ui->label(u, TextBoxId, WindowsId, 2, 2, 29, "") < 0)
+	if(ui->label(u, TextBoxId, WindowsId, 2, 2, 39, "") < 0)
 		raise "fail:windows";
 
-	if(ui->label(u, TextBoxId, FallbackId, 2, 3, 29, "") < 0)
+	if(ui->label(u, TextBoxId, FallbackId, 2, 3, 42, "") < 0)
 		raise "fail:fallback";
 
 	if(ui->button(u, WinId, BtnToggleId, 3, 21, 10, 1, "Toggle", "t", AppTarget, "app.toggle") < 0)

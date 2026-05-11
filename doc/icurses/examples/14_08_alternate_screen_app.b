@@ -190,7 +190,7 @@ refresh(u: ref IcUi->Ui)
 		ui->settext(u, State1Id, "Actual app screen: inactive");
 
 	ui->settext(u, State2Id, "Work count: " + sys->sprint("%d", workcount));
-	ui->settext(u, State3Id, "Last action: " + lastaction);
+	ui->settext(u, State3Id, " Last action: " + lastaction);
 
 	ui->setstatus(u, "alternate screen template: " + lastaction);
 	ui->draw(u);
@@ -246,7 +246,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, 84, 23, " Alternate screen application template ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 74, "The terminal preserves normal screen content while the app owns another screen.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 80, "The terminal preserves normal screen content while the app owns another screen.") < 0)
 		raise "fail:title";
 
 	if(ui->window(u, WinId, NormalBoxId, 3, 4, 34, 11, " Preserved normal screen model ") < 0)
@@ -270,22 +270,22 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, StateBoxId, State2Id, 30, 1, 20, "") < 0)
 		raise "fail:state 2";
 
-	if(ui->label(u, StateBoxId, State3Id, 2, 2, 72, "") < 0)
+	if(ui->label(u, StateBoxId, State3Id, 2, 2, 43, "") < 0)
 		raise "fail:state 3";
 
 	if(ui->group(u, WinId, PreviewLayerId, 0, 0, 84, 23) < 0)
 		raise "fail:preview layer";
 
-	if(ui->shadowwindow(u, PreviewLayerId, PreviewShadowId, PreviewWinId, 20, 5, 44, 14, " Normal screen preview ", 1, 1) < 0)
+	if(ui->shadowwindow(u, PreviewLayerId, PreviewShadowId, PreviewWinId, 20, 5, 48, 14, " Normal screen preview ", 1, 1) < 0)
 		raise "fail:preview window";
 
-	if(ui->canvas(u, PreviewWinId, PreviewCanvasId, 3, 2, 38, 9) < 0)
+	if(ui->canvas(u, PreviewWinId, PreviewCanvasId, 3, 2, 42, 9) < 0)
 		raise "fail:preview canvas";
 
-	if(ui->label(u, PreviewWinId, PreviewTextId, 3, 11, 36, "This is a model of what returns after exit.") < 0)
+	if(ui->label(u, PreviewWinId, PreviewTextId, 3, 11, 43, "This is a model of what returns after exit.") < 0)
 		raise "fail:preview text";
 
-	if(ui->button(u, PreviewWinId, BtnPreviewCloseId, 16, 12, 12, 1, "Close", "", AppTarget, "app.preview.close") < 0)
+	if(ui->button(u, PreviewWinId, BtnPreviewCloseId, 16, 12, 10, 1, "Close", "", AppTarget, "app.preview.close") < 0)
 		raise "fail:preview close";
 
 	if(ui->group(u, WinId, HelpLayerId, 0, 0, 84, 23) < 0)
@@ -297,7 +297,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, HelpWinId, HelpText1Id, 3, 2, 30, "Help is a temporary top layer.") < 0)
 		raise "fail:help text 1";
 
-	if(ui->label(u, HelpWinId, HelpText2Id, 3, 3, 30, "Hide the whole layer to close it.") < 0)
+	if(ui->label(u, HelpWinId, HelpText2Id, 3, 3, 34, "Hide the whole layer to close it.") < 0)
 		raise "fail:help text 2";
 
 	if(ui->button(u, HelpWinId, BtnHelpCloseId, 14, 5, 12, 1, "Close", "", AppTarget, "app.help.close") < 0)

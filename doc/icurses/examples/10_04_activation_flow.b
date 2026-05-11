@@ -187,7 +187,7 @@ refresh(u: ref IcUi->Ui)
 
 	ui->settext(u, ResultFocusId, "Active focus/action: " + active);
 	ui->settext(u, ResultCmdId, "Last command: " + lastcmd);
-	ui->settext(u, ResultCountsId, "compile=" + sys->sprint("%d", compiled) +
+	ui->settext(u, ResultCountsId, " compile=" + sys->sprint("%d", compiled) +
 		" test=" + sys->sprint("%d", tested) +
 		" deploy=" + sys->sprint("%d", deployed));
 
@@ -240,7 +240,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, 84, 22, " Activation flow ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 74, "Activation produces a command; each command has its own application pipeline.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 78, "Activation produces a command; each command has its own application pipeline.") < 0)
 		raise "fail:title";
 
 	if(ui->window(u, WinId, CompileBoxId, 3, 4, 25, 9, " Compile ") < 0)
@@ -306,7 +306,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, ResultBoxId, ResultCmdId, 2, 2, 72, "") < 0)
 		raise "fail:result cmd";
 
-	if(ui->label(u, ResultBoxId, ResultCountsId, 2, 3, 72, "") < 0)
+	if(ui->label(u, ResultBoxId, ResultCountsId, 2, 3, 32, "") < 0)
 		raise "fail:result counts";
 
 	if(ui->button(u, WinId, BtnCompileId, 3, 20, 12, 1, "Compile", "c", AppTarget, "app.compile") < 0)

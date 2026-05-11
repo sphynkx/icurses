@@ -199,7 +199,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, DocumentBoxId, DocStateId, 2, 2, 64, "") < 0)
 		raise "fail:doc state";
 
-	if(ui->label(u, DocumentBoxId, DocChangesId, 2, 3, 64, "") < 0)
+	if(ui->label(u, DocumentBoxId, DocChangesId, 2, 3, 24, "") < 0)
 		raise "fail:doc changes";
 
 	if(ui->button(u, WinId, BtnExitId, 3, 18, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)

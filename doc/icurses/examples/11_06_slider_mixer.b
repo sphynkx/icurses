@@ -239,25 +239,25 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, WinId, SummaryId, 3, 14, 70, "") < 0)
 		raise "fail:summary";
 
-	if(ui->button(u, WinId, BtnFocusVolumeId, 3, 18, 10, 1, "Volume", "1", AppTarget, "app.focus.volume") < 0)
+	if(ui->button(u, WinId, BtnFocusVolumeId, 3, 18, 11, 1, "Volume", "1", AppTarget, "app.focus.volume") < 0)
 		raise "fail:focus volume";
 
 	if(ui->button(u, WinId, BtnFocusBassId, 15, 18, 10, 1, "Bass", "2", AppTarget, "app.focus.bass") < 0)
 		raise "fail:focus bass";
 
-	if(ui->button(u, WinId, BtnFocusTrebleId, 27, 18, 10, 1, "Treble", "3", AppTarget, "app.focus.treble") < 0)
+	if(ui->button(u, WinId, BtnFocusTrebleId, 26, 18, 12, 1, "Treble", "3", AppTarget, "app.focus.treble") < 0)
 		raise "fail:focus treble";
 
-	if(ui->button(u, WinId, BtnMinusId, 39, 18, 8, 1, "-", "-", AppTarget, "app.dec") < 0)
+	if(ui->button(u, WinId, BtnMinusId, 39, 18, 6, 1, "-", "-", AppTarget, "app.dec") < 0)
 		raise "fail:minus";
 
-	if(ui->button(u, WinId, BtnPlusId, 49, 18, 8, 1, "+", "+", AppTarget, "app.inc") < 0)
+	if(ui->button(u, WinId, BtnPlusId, 46, 18, 6, 1, "+", "+", AppTarget, "app.inc") < 0)
 		raise "fail:plus";
 
-	if(ui->button(u, WinId, BtnResetId, 59, 18, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
+	if(ui->button(u, WinId, BtnResetId, 53, 18, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
 		raise "fail:reset";
 
-	if(ui->button(u, WinId, BtnExitId, 67, 18, 8, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 64, 18, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	active = VolumeId;

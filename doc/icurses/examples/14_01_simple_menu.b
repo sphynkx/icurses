@@ -157,7 +157,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 74);
+	x = center(sw, 84);
 	y = center(sh, 20);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -166,7 +166,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 74, 20, " Simple menu template ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 90, 20, " Simple menu template ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 64, "A small application can start with a simple command menu.") < 0)
@@ -187,19 +187,19 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->button(u, MenuBoxId, BtnExitId, 4, 8, 14, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
-	if(ui->window(u, WinId, InfoBoxId, 31, 4, 40, 12, " Application state ") < 0)
+	if(ui->window(u, WinId, InfoBoxId, 31, 4, 54, 12, " Application state ") < 0)
 		raise "fail:info box";
 
-	if(ui->label(u, InfoBoxId, InfoTitleId, 2, 1, 34, "The menu does not own business logic.") < 0)
+	if(ui->label(u, InfoBoxId, InfoTitleId, 2, 1, 49, "The menu does not own business logic.") < 0)
 		raise "fail:info title";
 
-	if(ui->label(u, InfoBoxId, InfoLine1Id, 2, 3, 34, "") < 0)
+	if(ui->label(u, InfoBoxId, InfoLine1Id, 2, 3, 49, "") < 0)
 		raise "fail:info line 1";
 
-	if(ui->label(u, InfoBoxId, InfoLine2Id, 2, 4, 34, "") < 0)
+	if(ui->label(u, InfoBoxId, InfoLine2Id, 2, 4, 49, "") < 0)
 		raise "fail:info line 2";
 
-	if(ui->label(u, InfoBoxId, InfoLine3Id, 2, 6, 34, "") < 0)
+	if(ui->label(u, InfoBoxId, InfoLine3Id, 2, 6, 49, "") < 0)
 		raise "fail:info line 3";
 
 	#

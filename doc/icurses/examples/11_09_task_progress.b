@@ -291,13 +291,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->button(u, WinId, BtnStartId, 3, 19, 10, 1, "Start", "s", AppTarget, "app.start") < 0)
 		raise "fail:start";
 
-	if(ui->button(u, WinId, BtnPauseId, 15, 19, 10, 1, "Pause", "p", AppTarget, "app.pause") < 0)
+	if(ui->button(u, WinId, BtnPauseId, 15, 19, 12, 1, "Pause", "p", AppTarget, "app.pause") < 0)
 		raise "fail:pause";
 
-	if(ui->button(u, WinId, BtnResetId, 27, 19, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
+	if(ui->button(u, WinId, BtnResetId, 29, 19, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
 		raise "fail:reset";
 
-	if(ui->button(u, WinId, BtnExitId, 39, 19, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 41, 19, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	resetstate(u);

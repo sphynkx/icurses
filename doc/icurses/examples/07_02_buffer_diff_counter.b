@@ -127,7 +127,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 
 	root = ui->rootid(u);
 
-	w = 70;
+	w = 80;
 	h = 14;
 	x = center(sw, w);
 	y = center(sh, h);
@@ -141,7 +141,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, w, h, " Front/back buffers ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, InfoId, 3, 2, 60, "Application updates state; renderer computes terminal differences.") < 0)
+	if(ui->label(u, WinId, InfoId, 3, 2, 70, "Application updates state; renderer computes terminal differences.") < 0)
 		raise "fail:info";
 
 	if(ui->label(u, WinId, CounterId, 3, 4, 60, "") < 0)

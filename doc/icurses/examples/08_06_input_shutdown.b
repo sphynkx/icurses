@@ -156,7 +156,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 
 	root = ui->rootid(u);
 
-	x = center(sw, 76);
+	x = center(sw, 100);
 	y = center(sh, 18);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -165,31 +165,31 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 76, 18, " Input shutdown ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 92, 18, " Input shutdown ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, IntroId, 3, 2, 66, "The Ui object owns input readers, timer events, and renderer state.") < 0)
 		raise "fail:intro";
 
-	if(ui->window(u, WinId, ResourceBoxId, 3, 4, 38, 8, " Resources ") < 0)
+	if(ui->window(u, WinId, ResourceBoxId, 3, 4, 46, 8, " Resources ") < 0)
 		raise "fail:resources";
 
-	if(ui->label(u, ResourceBoxId, KeyboardId, 2, 1, 32, "") < 0)
+	if(ui->label(u, ResourceBoxId, KeyboardId, 2, 1, 42, "") < 0)
 		raise "fail:keyboard";
 
-	if(ui->label(u, ResourceBoxId, TimerId, 2, 2, 32, "") < 0)
+	if(ui->label(u, ResourceBoxId, TimerId, 2, 2, 42, "") < 0)
 		raise "fail:timer";
 
-	if(ui->label(u, ResourceBoxId, RendererId, 2, 3, 32, "") < 0)
+	if(ui->label(u, ResourceBoxId, RendererId, 2, 3, 42, "") < 0)
 		raise "fail:renderer";
 
-	if(ui->label(u, ResourceBoxId, TerminalId, 2, 4, 32, "") < 0)
+	if(ui->label(u, ResourceBoxId, TerminalId, 2, 4, 42, "") < 0)
 		raise "fail:terminal";
 
-	if(ui->window(u, WinId, TickBoxId, 45, 4, 26, 8, " Live input ") < 0)
+	if(ui->window(u, WinId, TickBoxId, 50, 4, 40, 8, " Live input ") < 0)
 		raise "fail:tick box";
 
-	if(ui->label(u, TickBoxId, TickId, 2, 2, 20, "") < 0)
+	if(ui->label(u, TickBoxId, TickId, 2, 2, 34, "") < 0)
 		raise "fail:tick";
 
 	if(ui->label(u, TickBoxId, SpinnerId, 2, 4, 20, "") < 0)

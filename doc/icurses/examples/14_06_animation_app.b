@@ -190,7 +190,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, 82, 20, " Animation template ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 72, "Animation state belongs to the application; drawing belongs to the renderer.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 76, "Animation state belongs to the application; drawing belongs to the renderer.") < 0)
 		raise "fail:title";
 
 	if(ui->window(u, WinId, CanvasBoxId, 3, 4, 60, 12, " Animation canvas ") < 0)
@@ -199,10 +199,10 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->canvas(u, CanvasBoxId, CanvasId, 2, 1, CanvasW, CanvasH) < 0)
 		raise "fail:canvas";
 
-	if(ui->window(u, WinId, StateBoxId, 66, 4, 13, 12, " State ") < 0)
+	if(ui->window(u, WinId, StateBoxId, 66, 4, 15, 12, " State ") < 0)
 		raise "fail:state box";
 
-	if(ui->label(u, StateBoxId, State1Id, 1, 2, 11, "") < 0)
+	if(ui->label(u, StateBoxId, State1Id, 1, 2, 12, "") < 0)
 		raise "fail:state 1";
 
 	if(ui->label(u, StateBoxId, State2Id, 1, 4, 11, "") < 0)

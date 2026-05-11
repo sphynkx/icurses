@@ -186,34 +186,34 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 80, 20, " Tree layering ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 90, 20, " Tree layering ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 70, "Drawing follows tree order: later nodes are drawn above earlier nodes.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, TreeBoxId, 3, 4, 34, 11, " Tree order ") < 0)
+	if(ui->window(u, WinId, TreeBoxId, 3, 4, 38, 11, " Tree order ") < 0)
 		raise "fail:tree box";
 
 	if(ui->label(u, TreeBoxId, TreeRootId, 2, 1, 28, "root") < 0)
 		raise "fail:tree root";
 
-	if(ui->label(u, TreeBoxId, TreeBackId, 4, 2, 28, "`-- BackCardId  first  [visible]") < 0)
+	if(ui->label(u, TreeBoxId, TreeBackId, 4, 2, 32, "`-- BackCardId  first  [visible]") < 0)
 		raise "fail:tree back";
 
-	if(ui->label(u, TreeBoxId, TreeMainId, 4, 3, 28, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeMainId, 4, 3, 32, "") < 0)
 		raise "fail:tree main";
 
-	if(ui->label(u, TreeBoxId, TreeTopId, 4, 4, 28, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeTopId, 4, 4, 32, "") < 0)
 		raise "fail:tree top";
 
-	if(ui->label(u, TreeBoxId, TreeNote1Id, 2, 7, 28, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeNote1Id, 2, 7, 32, "") < 0)
 		raise "fail:tree note 1";
 
-	if(ui->label(u, TreeBoxId, TreeNote2Id, 2, 8, 28, "") < 0)
+	if(ui->label(u, TreeBoxId, TreeNote2Id, 2, 8, 32, "") < 0)
 		raise "fail:tree note 2";
 
-	if(ui->window(u, WinId, StageId, 40, 4, 36, 11, " Visual stage ") < 0)
+	if(ui->window(u, WinId, StageId, 44, 4, 36, 11, " Visual stage ") < 0)
 		raise "fail:stage";
 
 	if(ui->window(u, StageId, BackCardId, 2, 1, 24, 6, " Back ") < 0)

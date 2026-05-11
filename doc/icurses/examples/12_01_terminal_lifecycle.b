@@ -67,6 +67,7 @@ LogBoxId: con 50;
 Log1Id: con 51;
 Log2Id: con 52;
 Log3Id: con 53;
+Log4Id: con 54;
 
 EmergencyLayerId: con 60;
 EmergencyShadowId: con 61;
@@ -242,7 +243,8 @@ refresh(u: ref IcUi->Ui)
 	ui->settext(u, Log2Id, "clear count=" + sys->sprint("%d", clears) +
 		" ticks=" + sys->sprint("%d", ticks) +
 		" emergency=" + yesno(emergency));
-	ui->settext(u, Log3Id, "Rule: use renderer-owned clear inside UI; terminal clear only at boundaries.");
+	ui->settext(u, Log3Id, "Rule: use renderer-owned clear inside UI;");
+	ui->settext(u, Log4Id, "terminal clear only at boundaries.");
 
 	if(emergency)
 		setemergencyvisible(u, 1);
@@ -283,7 +285,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 84);
+	x = center(sw, 115);
 	y = center(sh, 23);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -292,13 +294,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 84, 23, " Terminal lifecycle ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 115, 23, " Terminal lifecycle ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 74, "Terminal ownership must be visible, synchronized and restored safely.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, RuntimeBoxId, 3, 4, 38, 7, " Runtime ") < 0)
+	if(ui->window(u, WinId, RuntimeBoxId, 3, 4, 54, 7, " Runtime ") < 0)
 		raise "fail:runtime box";
 
 	if(ui->label(u, RuntimeBoxId, RuntimeTitleId, 2, 1, 32, "") < 0)
@@ -313,47 +315,50 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, RuntimeBoxId, RuntimeCursorId, 2, 4, 32, "") < 0)
 		raise "fail:runtime cursor";
 
-	if(ui->label(u, RuntimeBoxId, RuntimeOwnerId, 2, 5, 32, "") < 0)
+	if(ui->label(u, RuntimeBoxId, RuntimeOwnerId, 2, 5, 50, "") < 0)
 		raise "fail:runtime owner";
 
-	if(ui->window(u, WinId, WorkspaceBoxId, 44, 4, 37, 11, " Renderer workspace ") < 0)
+	if(ui->window(u, WinId, WorkspaceBoxId, 58, 4, 52, 11, " Renderer workspace ") < 0)
 		raise "fail:workspace box";
 
-	if(ui->canvas(u, WorkspaceBoxId, WorkspaceCanvasId, 2, 1, 33, 9) < 0)
+	if(ui->canvas(u, WorkspaceBoxId, WorkspaceCanvasId, 2, 1, 48, 9) < 0)
 		raise "fail:workspace canvas";
 
-	if(ui->window(u, WinId, CleanupBoxId, 3, 12, 38, 8, " Cleanup path ") < 0)
+	if(ui->window(u, WinId, CleanupBoxId, 3, 12, 42, 8, " Cleanup path ") < 0)
 		raise "fail:cleanup box";
 
-	if(ui->label(u, CleanupBoxId, CleanupTitleId, 2, 1, 32, "") < 0)
+	if(ui->label(u, CleanupBoxId, CleanupTitleId, 2, 1, 36, "") < 0)
 		raise "fail:cleanup title";
 
-	if(ui->label(u, CleanupBoxId, CleanupStep1Id, 2, 2, 32, "") < 0)
+	if(ui->label(u, CleanupBoxId, CleanupStep1Id, 2, 2, 36, "") < 0)
 		raise "fail:cleanup step 1";
 
-	if(ui->label(u, CleanupBoxId, CleanupStep2Id, 2, 3, 32, "") < 0)
+	if(ui->label(u, CleanupBoxId, CleanupStep2Id, 2, 3, 36, "") < 0)
 		raise "fail:cleanup step 2";
 
-	if(ui->label(u, CleanupBoxId, CleanupStep3Id, 2, 4, 32, "") < 0)
+	if(ui->label(u, CleanupBoxId, CleanupStep3Id, 2, 4, 36, "") < 0)
 		raise "fail:cleanup step 3";
 
-	if(ui->label(u, CleanupBoxId, CleanupStep4Id, 2, 5, 32, "") < 0)
+	if(ui->label(u, CleanupBoxId, CleanupStep4Id, 2, 5, 36, "") < 0)
 		raise "fail:cleanup step 4";
 
-	if(ui->label(u, CleanupBoxId, CleanupStep5Id, 2, 6, 32, "") < 0)
+	if(ui->label(u, CleanupBoxId, CleanupStep5Id, 2, 6, 36, "") < 0)
 		raise "fail:cleanup step 5";
 
-	if(ui->window(u, WinId, LogBoxId, 44, 15, 37, 4, " Log ") < 0)
+	if(ui->window(u, WinId, LogBoxId, 58, 15, 50, 6, " Log ") < 0)
 		raise "fail:log box";
 
-	if(ui->label(u, LogBoxId, Log1Id, 2, 1, 32, "") < 0)
+	if(ui->label(u, LogBoxId, Log1Id, 2, 1, 46, "") < 0)
 		raise "fail:log 1";
 
-	if(ui->label(u, LogBoxId, Log2Id, 2, 2, 32, "") < 0)
+	if(ui->label(u, LogBoxId, Log2Id, 2, 2, 46, "") < 0)
 		raise "fail:log 2";
 
-	if(ui->label(u, LogBoxId, Log3Id, 2, 3, 32, "") < 0)
+	if(ui->label(u, LogBoxId, Log3Id, 2, 3, 46, "") < 0)
 		raise "fail:log 3";
+
+	if(ui->label(u, LogBoxId, Log4Id, 2, 4, 46, "") < 0)
+		raise "fail:log 4";
 
 	if(ui->group(u, WinId, EmergencyLayerId, 20, 7, 44, 9) < 0)
 		raise "fail:emergency layer";
@@ -361,19 +366,19 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->shadowwindow(u, EmergencyLayerId, EmergencyShadowId, EmergencyWinId, 0, 0, 44, 9, " Emergency simulation ", 1, 1) < 0)
 		raise "fail:emergency window";
 
-	if(ui->label(u, EmergencyWinId, EmergencyTitleId, 3, 2, 36, "Simulated emergency, no crash happened.") < 0)
+	if(ui->label(u, EmergencyWinId, EmergencyTitleId, 3, 2, 40, "Simulated emergency, no crash happened.") < 0)
 		raise "fail:emergency title";
 
-	if(ui->label(u, EmergencyWinId, EmergencyLine1Id, 3, 3, 36, "Real apps should jump to cleanup path.") < 0)
+	if(ui->label(u, EmergencyWinId, EmergencyLine1Id, 3, 3, 40, "Real apps should jump to cleanup path.") < 0)
 		raise "fail:emergency line 1";
 
-	if(ui->label(u, EmergencyWinId, EmergencyLine2Id, 3, 4, 36, "Close hides this panel safely.") < 0)
+	if(ui->label(u, EmergencyWinId, EmergencyLine2Id, 3, 4, 40, "Close hides this panel safely.") < 0)
 		raise "fail:emergency line 2";
 
-	if(ui->label(u, EmergencyWinId, EmergencyLine3Id, 3, 5, 36, "Exit still restores terminal state.") < 0)
+	if(ui->label(u, EmergencyWinId, EmergencyLine3Id, 3, 5, 40, "Exit still restores terminal state.") < 0)
 		raise "fail:emergency line 3";
 
-	if(ui->button(u, EmergencyWinId, BtnEmergencyCloseId, 16, 7, 12, 1, "Close", "", AppTarget, "app.emergency.close") < 0)
+	if(ui->button(u, EmergencyWinId, BtnEmergencyCloseId, 16, 7, 10, 1, "Close", "", AppTarget, "app.emergency.close") < 0)
 		raise "fail:emergency close";
 
 	if(ui->button(u, WinId, BtnStepId, 3, 21, 10, 1, "Step", "s", AppTarget, "app.step") < 0)

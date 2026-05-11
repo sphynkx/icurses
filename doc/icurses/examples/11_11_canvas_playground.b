@@ -223,7 +223,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 82, 22, " Canvas playground ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 90, 22, " Canvas playground ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 72, "Canvas is a custom drawing area owned by the renderer.") < 0)
@@ -235,16 +235,16 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->canvas(u, CanvasFrameId, CanvasId, 2, 1, CanvasW, CanvasH) < 0)
 		raise "fail:canvas";
 
-	if(ui->window(u, WinId, InspectorBoxId, 62, 4, 17, 12, " Inspector ") < 0)
+	if(ui->window(u, WinId, InspectorBoxId, 62, 4, 26, 12, " Inspector ") < 0)
 		raise "fail:inspector";
 
-	if(ui->label(u, InspectorBoxId, PositionId, 2, 2, 13, "") < 0)
+	if(ui->label(u, InspectorBoxId, PositionId, 2, 2, 22, "") < 0)
 		raise "fail:position";
 
-	if(ui->label(u, InspectorBoxId, FramesId, 2, 5, 13, "") < 0)
+	if(ui->label(u, InspectorBoxId, FramesId, 2, 5, 22, "") < 0)
 		raise "fail:frames";
 
-	if(ui->label(u, InspectorBoxId, ModeId, 2, 8, 13, "") < 0)
+	if(ui->label(u, InspectorBoxId, ModeId, 2, 8, 22, "") < 0)
 		raise "fail:mode";
 
 	if(ui->button(u, WinId, BtnLeftId, 2, 19, 8, 1, "Left", "a", AppTarget, "app.left") < 0)

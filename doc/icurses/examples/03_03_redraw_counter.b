@@ -148,7 +148,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->progress(u, WinId, ProgressId, 3, 6, 50, value, 100) < 0)
 		raise "fail:progress";
 
-	if(ui->label(u, WinId, HintId, 3, 8, 58, "The renderer compares buffers and flushes the visible result.") < 0)
+	if(ui->label(u, WinId, HintId, 3, 8, 61, "The renderer compares buffers and flushes the visible result.") < 0)
 		raise "fail:hint";
 
 	if(ui->button(u, WinId, BtnDecId, 3, 11, 8, 1, "Dec", "-", AppTarget, "app.dec") < 0)

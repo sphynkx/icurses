@@ -146,7 +146,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 80);
+	x = center(sw, 100);
 	y = center(sh, 20);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -155,49 +155,49 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 80, 20, " Custom application commands ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 120, 20, " Custom application commands ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 70, "Application commands are ordinary strings with application-defined meaning.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, TodoBoxId, 3, 4, 22, 7, " Todo ") < 0)
+	if(ui->window(u, WinId, TodoBoxId, 3, 4, 26, 7, " Todo ") < 0)
 		raise "fail:todo";
 
-	if(ui->label(u, TodoBoxId, TodoTitleId, 2, 1, 16, "Queue") < 0)
+	if(ui->label(u, TodoBoxId, TodoTitleId, 2, 1, 22, "Queue") < 0)
 		raise "fail:todo title";
 
-	if(ui->label(u, TodoBoxId, TodoCountId, 2, 3, 16, "") < 0)
+	if(ui->label(u, TodoBoxId, TodoCountId, 2, 3, 22, "") < 0)
 		raise "fail:todo count";
 
-	if(ui->label(u, TodoBoxId, TodoLastId, 2, 4, 16, "") < 0)
+	if(ui->label(u, TodoBoxId, TodoLastId, 2, 4, 22, "") < 0)
 		raise "fail:todo last";
 
-	if(ui->window(u, WinId, RunBoxId, 29, 4, 22, 7, " Running ") < 0)
+	if(ui->window(u, WinId, RunBoxId, 30, 4, 26, 7, " Running ") < 0)
 		raise "fail:running";
 
-	if(ui->label(u, RunBoxId, RunTitleId, 2, 1, 16, "In progress") < 0)
+	if(ui->label(u, RunBoxId, RunTitleId, 2, 1, 22, "In progress") < 0)
 		raise "fail:running title";
 
-	if(ui->label(u, RunBoxId, RunCountId, 2, 3, 16, "") < 0)
+	if(ui->label(u, RunBoxId, RunCountId, 2, 3, 22, "") < 0)
 		raise "fail:running count";
 
-	if(ui->label(u, RunBoxId, RunLastId, 2, 4, 16, "") < 0)
+	if(ui->label(u, RunBoxId, RunLastId, 2, 4, 22, "") < 0)
 		raise "fail:running last";
 
-	if(ui->window(u, WinId, DoneBoxId, 55, 4, 22, 7, " Done ") < 0)
+	if(ui->window(u, WinId, DoneBoxId, 57, 4, 26, 7, " Done ") < 0)
 		raise "fail:done";
 
-	if(ui->label(u, DoneBoxId, DoneTitleId, 2, 1, 16, "Completed") < 0)
+	if(ui->label(u, DoneBoxId, DoneTitleId, 2, 1, 22, "Completed") < 0)
 		raise "fail:done title";
 
-	if(ui->label(u, DoneBoxId, DoneCountId, 2, 3, 16, "") < 0)
+	if(ui->label(u, DoneBoxId, DoneCountId, 2, 3, 22, "") < 0)
 		raise "fail:done count";
 
-	if(ui->label(u, DoneBoxId, DoneLastId, 2, 4, 16, "") < 0)
+	if(ui->label(u, DoneBoxId, DoneLastId, 2, 4, 22, "") < 0)
 		raise "fail:done last";
 
-	if(ui->window(u, WinId, CommandBoxId, 3, 12, 74, 4, " Command log ") < 0)
+	if(ui->window(u, WinId, CommandBoxId, 3, 12, 80, 4, " Command log ") < 0)
 		raise "fail:command box";
 
 	if(ui->label(u, CommandBoxId, CommandLine1Id, 2, 1, 68, "") < 0)

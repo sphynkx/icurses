@@ -249,10 +249,10 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, 76, 18, " Root element and tree ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 66, "The root node is implicit. Application nodes are children under it.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 67, "The root node is implicit. Application nodes are children under it.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, TreeBoxId, 3, 4, 66, 8, " Visual tree ") < 0)
+	if(ui->window(u, WinId, TreeBoxId, 3, 4, 67, 8, " Visual tree ") < 0)
 		raise "fail:tree box";
 
 	if(ui->label(u, TreeBoxId, MarkerRootId, 2, 1, 2, "") < 0)

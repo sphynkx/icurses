@@ -199,7 +199,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, StateBoxId, StepsId, 2, 2, 60, "") < 0)
 		raise "fail:steps";
 
-	if(ui->label(u, StateBoxId, LastCmdId, 2, 3, 60, "") < 0)
+	if(ui->label(u, StateBoxId, LastCmdId, 2, 3, 30, "") < 0)
 		raise "fail:last cmd";
 
 	if(ui->button(u, WinId, BtnWorkId, 3, 16, 10, 1, "Work", "w", AppTarget, "app.work") < 0)

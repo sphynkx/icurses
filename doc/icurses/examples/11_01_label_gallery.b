@@ -198,7 +198,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 80, 22, " Label gallery ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 90, 22, " Label gallery ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 70, "Labels are passive text nodes. Buttons below change their text.") < 0)
@@ -237,13 +237,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, StaticBoxId, StaticLine3Id, 2, 4, 35, "Labels do not receive focus.") < 0)
 		raise "fail:static line 3";
 
-	if(ui->window(u, WinId, LiveBoxId, 35, 11, 41, 7, " Live labels ") < 0)
+	if(ui->window(u, WinId, LiveBoxId, 35, 11, 53, 7, " Live labels ") < 0)
 		raise "fail:live box";
 
 	if(ui->label(u, LiveBoxId, BannerLabelId, 2, 1, 35, "") < 0)
 		raise "fail:banner label";
 
-	if(ui->label(u, LiveBoxId, MessageLabelId, 2, 2, 35, "") < 0)
+	if(ui->label(u, LiveBoxId, MessageLabelId, 2, 2, 49, "") < 0)
 		raise "fail:message label";
 
 	if(ui->label(u, LiveBoxId, CounterLabelId, 2, 3, 35, "") < 0)
@@ -255,16 +255,16 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, LiveBoxId, ResultLabelId, 2, 5, 35, "") < 0)
 		raise "fail:result label";
 
-	if(ui->button(u, WinId, BtnNextId, 3, 19, 12, 1, "Next Msg", "n", AppTarget, "app.next") < 0)
+	if(ui->button(u, WinId, BtnNextId, 3, 19, 14, 1, "Next Msg", "n", AppTarget, "app.next") < 0)
 		raise "fail:next";
 
-	if(ui->button(u, WinId, BtnModeId, 17, 19, 12, 1, "Mode", "m", AppTarget, "app.mode") < 0)
+	if(ui->button(u, WinId, BtnModeId, 19, 19, 12, 1, "Mode", "m", AppTarget, "app.mode") < 0)
 		raise "fail:mode";
 
-	if(ui->button(u, WinId, BtnResetId, 31, 19, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
+	if(ui->button(u, WinId, BtnResetId, 33, 19, 10, 1, "Reset", "r", AppTarget, "app.reset") < 0)
 		raise "fail:reset";
 
-	if(ui->button(u, WinId, BtnExitId, 43, 19, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 45, 19, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	counter = 0;

@@ -286,7 +286,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 82);
+	x = center(sw, 92);
 	y = center(sh, 22);
 
 	items = array[] of {
@@ -310,13 +310,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 82, 22, " Complex navigation ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 96, 22, " Complex navigation ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 72, "A complex control has one logical focus owner and its own internal selection.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 78, "A complex control has one logical focus owner and its own internal selection.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, OwnerBoxId, 3, 4, 38, 6, " Focus and internal state ") < 0)
+	if(ui->window(u, WinId, OwnerBoxId, 3, 4, 42, 6, " Focus and internal state ") < 0)
 		raise "fail:owner box";
 
 	if(ui->label(u, OwnerBoxId, LogicalFocusId, 2, 1, 32, "") < 0)
@@ -325,7 +325,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, OwnerBoxId, ButtonFocusId, 2, 2, 32, "") < 0)
 		raise "fail:button focus";
 
-	if(ui->label(u, OwnerBoxId, InnerStateId, 2, 4, 34, "") < 0)
+	if(ui->label(u, OwnerBoxId, InnerStateId, 2, 4, 38, "") < 0)
 		raise "fail:inner state";
 
 	if(ui->window(u, WinId, ListFrameId, 3, 11, 38, 8, " Service list viewport ") < 0)
@@ -334,16 +334,16 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->canvas(u, ListFrameId, ListCanvasId, 2, 1, ListCols, VisibleRows) < 0)
 		raise "fail:list canvas";
 
-	if(ui->window(u, WinId, DetailsBoxId, 45, 4, 34, 6, " Current item ") < 0)
+	if(ui->window(u, WinId, DetailsBoxId, 47, 4, 47, 6, " Current item ") < 0)
 		raise "fail:details";
 
-	if(ui->label(u, DetailsBoxId, DetailsTitleId, 2, 1, 28, "") < 0)
+	if(ui->label(u, DetailsBoxId, DetailsTitleId, 2, 1, 44, "") < 0)
 		raise "fail:details title";
 
-	if(ui->label(u, DetailsBoxId, DetailsLine1Id, 2, 3, 28, "") < 0)
+	if(ui->label(u, DetailsBoxId, DetailsLine1Id, 2, 3, 44, "") < 0)
 		raise "fail:details line 1";
 
-	if(ui->label(u, DetailsBoxId, DetailsLine2Id, 2, 4, 28, "") < 0)
+	if(ui->label(u, DetailsBoxId, DetailsLine2Id, 2, 4, 44, "") < 0)
 		raise "fail:details line 2";
 
 	if(ui->window(u, WinId, SelectedBoxId, 45, 11, 34, 8, " Selected items ") < 0)

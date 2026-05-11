@@ -196,7 +196,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 84);
+	x = center(sw, 100);
 	y = center(sh, 22);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -205,7 +205,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 84, 22, " Canvas application template ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 100, 22, " Canvas application template ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 74, "Canvas is useful when standard widgets are not enough for the main content.") < 0)
@@ -217,16 +217,16 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->canvas(u, CanvasBoxId, CanvasId, 2, 1, GraphW, GraphH) < 0)
 		raise "fail:canvas";
 
-	if(ui->window(u, WinId, InfoBoxId, 62, 4, 19, 12, " State ") < 0)
+	if(ui->window(u, WinId, InfoBoxId, 62, 4, 36, 12, " State ") < 0)
 		raise "fail:info box";
 
-	if(ui->label(u, InfoBoxId, Info1Id, 2, 2, 15, "") < 0)
+	if(ui->label(u, InfoBoxId, Info1Id, 2, 2, 33, "") < 0)
 		raise "fail:info 1";
 
-	if(ui->label(u, InfoBoxId, Info2Id, 2, 4, 15, "") < 0)
+	if(ui->label(u, InfoBoxId, Info2Id, 2, 4, 33, "") < 0)
 		raise "fail:info 2";
 
-	if(ui->label(u, InfoBoxId, Info3Id, 2, 6, 15, "") < 0)
+	if(ui->label(u, InfoBoxId, Info3Id, 2, 6, 33, "") < 0)
 		raise "fail:info 3";
 
 	if(ui->button(u, WinId, BtnShiftId, 3, 19, 10, 1, "Shift", "s", AppTarget, "app.shift") < 0)

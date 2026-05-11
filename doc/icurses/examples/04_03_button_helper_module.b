@@ -143,19 +143,19 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, w, h, " Helper module connection ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 64, "This app calls IcButton directly, so it loads and initializes it.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 65, "This app calls IcButton directly, so it loads and initializes it.") < 0)
 		raise "fail:title";
 
-	if(ui->label(u, WinId, SchemeId, 3, 4, 64, "include: draw.m + icurses/button.m") < 0)
+	if(ui->label(u, WinId, SchemeId, 3, 4, 65, "include: draw.m + icurses/button.m") < 0)
 		raise "fail:scheme";
 
-	if(ui->label(u, WinId, HelperId, 3, 5, 64, "load/init: Sys, Icurses, IcUi, IcButton") < 0)
+	if(ui->label(u, WinId, HelperId, 3, 5, 65, "load/init: Sys, Icurses, IcUi, IcButton") < 0)
 		raise "fail:helper";
 
-	if(ui->label(u, WinId, CountId, 3, 7, 64, "") < 0)
+	if(ui->label(u, WinId, CountId, 3, 7, 65, "") < 0)
 		raise "fail:count";
 
-	if(ui->label(u, WinId, LastId, 3, 8, 64, "Last helper action: none") < 0)
+	if(ui->label(u, WinId, LastId, 3, 8, 65, "Last helper action: none") < 0)
 		raise "fail:last";
 
 	if(ui->button(u, WinId, BtnSaveId, 3, 11, 10, 1, "Save", "s", AppTarget, "app.save") < 0)

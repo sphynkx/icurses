@@ -157,13 +157,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, WinId, TitleId, 3, 2, 68, "Input is an editable focusable control with text and cursor state.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, FormBoxId, 3, 4, 35, 7, " Form ") < 0)
+	if(ui->window(u, WinId, FormBoxId, 3, 4, 37, 7, " Form ") < 0)
 		raise "fail:form box";
 
 	if(input->input(u, FormBoxId, NameInputId, 2, 2, 30, "Name:", "n", AppTarget, "app.input.submit", "inferno", 24) < 0)
 		raise "fail:input";
 
-	if(ui->label(u, FormBoxId, HintId, 2, 4, 30, "Try typing, Backspace, Left/Right.") < 0)
+	if(ui->label(u, FormBoxId, HintId, 2, 4, 34, "Try typing, Backspace, Left/Right.") < 0)
 		raise "fail:hint";
 
 	if(ui->window(u, WinId, InspectBoxId, 41, 4, 34, 7, " Input inspector ") < 0)

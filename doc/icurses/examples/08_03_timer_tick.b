@@ -166,10 +166,10 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 70, 16, " Timer events ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 78, 16, " Timer events ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, InfoId, 3, 2, 60, "StepTick is useful for animation, polling, and scheduled refresh.") < 0)
+	if(ui->label(u, WinId, InfoId, 3, 2, 66, "StepTick is useful for animation, polling, and scheduled refresh.") < 0)
 		raise "fail:info";
 
 	if(ui->window(u, WinId, SpinnerBoxId, 3, 4, 28, 5, " Tick-driven state ") < 0)

@@ -274,7 +274,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 78, 20, " List browser ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 80, 20, " List browser ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 68, "Browsing cursor and committed selection are separate list states.") < 0)
@@ -286,37 +286,37 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->canvas(u, ListFrameId, ListCanvasId, 2, 1, ListCols, VisibleRows) < 0)
 		raise "fail:list canvas";
 
-	if(ui->window(u, WinId, DetailsBoxId, 42, 4, 32, 10, " Details ") < 0)
+	if(ui->window(u, WinId, DetailsBoxId, 42, 4, 36, 10, " Details ") < 0)
 		raise "fail:details box";
 
-	if(ui->label(u, DetailsBoxId, CursorId, 2, 2, 26, "") < 0)
+	if(ui->label(u, DetailsBoxId, CursorId, 2, 2, 32, "") < 0)
 		raise "fail:cursor";
 
-	if(ui->label(u, DetailsBoxId, SelectedId, 2, 4, 26, "") < 0)
+	if(ui->label(u, DetailsBoxId, SelectedId, 2, 4, 32, "") < 0)
 		raise "fail:selected";
 
-	if(ui->label(u, DetailsBoxId, TopId, 2, 6, 26, "") < 0)
+	if(ui->label(u, DetailsBoxId, TopId, 2, 6, 32, "") < 0)
 		raise "fail:top";
 
-	if(ui->label(u, DetailsBoxId, ChosenId, 2, 7, 26, "") < 0)
+	if(ui->label(u, DetailsBoxId, ChosenId, 2, 7, 32, "") < 0)
 		raise "fail:chosen";
 
-	if(ui->button(u, WinId, BtnPrevId, 3, 17, 8, 1, "Prev", "p", AppTarget, "app.prev") < 0)
+	if(ui->button(u, WinId, BtnPrevId, 3, 17, 9, 1, "Prev", "p", AppTarget, "app.prev") < 0)
 		raise "fail:prev";
 
-	if(ui->button(u, WinId, BtnNextId, 13, 17, 8, 1, "Next", "n", AppTarget, "app.next") < 0)
+	if(ui->button(u, WinId, BtnNextId, 14, 17, 9, 1, "Next", "n", AppTarget, "app.next") < 0)
 		raise "fail:next";
 
-	if(ui->button(u, WinId, BtnHomeId, 23, 17, 10, 1, "Home", "h", AppTarget, "app.home") < 0)
+	if(ui->button(u, WinId, BtnHomeId, 25, 17, 10, 1, "Home", "h", AppTarget, "app.home") < 0)
 		raise "fail:home";
 
-	if(ui->button(u, WinId, BtnEndId, 35, 17, 8, 1, "End", "e", AppTarget, "app.end") < 0)
+	if(ui->button(u, WinId, BtnEndId, 37, 17, 8, 1, "End", "e", AppTarget, "app.end") < 0)
 		raise "fail:end";
 
-	if(ui->button(u, WinId, BtnChooseId, 45, 17, 12, 1, "Choose", "c", AppTarget, "app.choose") < 0)
+	if(ui->button(u, WinId, BtnChooseId, 47, 17, 12, 1, "Choose", "c", AppTarget, "app.choose") < 0)
 		raise "fail:choose";
 
-	if(ui->button(u, WinId, BtnExitId, 59, 17, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
+	if(ui->button(u, WinId, BtnExitId, 61, 17, 10, 1, "Exit", "q", AppTarget, "app.exit") < 0)
 		raise "fail:exit";
 
 	cursor = 0;

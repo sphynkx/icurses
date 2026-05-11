@@ -226,7 +226,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 82);
+	x = center(sw, 100);
 	y = center(sh, 22);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -235,13 +235,13 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 82, 22, " Command dispatch ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 100, 22, " Command dispatch ") < 0)
 		raise "fail:window";
 
 	if(ui->label(u, WinId, TitleId, 3, 2, 72, "The same command field can drive framework actions or application logic.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, DispatchBoxId, 3, 4, 76, 6, " Dispatch map ") < 0)
+	if(ui->window(u, WinId, DispatchBoxId, 3, 4, 83, 6, " Dispatch map ") < 0)
 		raise "fail:dispatch box";
 
 	if(ui->label(u, DispatchBoxId, DispatchTitleId, 2, 1, 68, "Command string decides which handler processes the message:") < 0)
@@ -256,31 +256,31 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, DispatchBoxId, RouteBuildId, 4, 4, 68, "app.build            -> application handler -> build pipeline panel") < 0)
 		raise "fail:route build";
 
-	if(ui->window(u, WinId, FrameworkPanelId, 3, 11, 24, 6, " UI node ") < 0)
+	if(ui->window(u, WinId, FrameworkPanelId, 3, 11, 27, 6, " UI node ") < 0)
 		raise "fail:framework panel";
 
 	if(ui->label(u, FrameworkPanelId, FrameworkTextId, 2, 1, 18, "node.toggle target") < 0)
 		raise "fail:framework text";
 
-	if(ui->label(u, FrameworkPanelId, FrameworkStateId, 2, 3, 20, "") < 0)
+	if(ui->label(u, FrameworkPanelId, FrameworkStateId, 2, 3, 22, "") < 0)
 		raise "fail:framework state";
 
-	if(ui->window(u, WinId, ExportPanelId, 29, 11, 24, 6, " Export job ") < 0)
+	if(ui->window(u, WinId, ExportPanelId, 32, 11, 28, 6, " Export job ") < 0)
 		raise "fail:export panel";
 
 	if(ui->label(u, ExportPanelId, ExportTitleId, 2, 1, 18, "Application data") < 0)
 		raise "fail:export title";
 
-	if(ui->label(u, ExportPanelId, ExportFileId, 2, 2, 20, "") < 0)
+	if(ui->label(u, ExportPanelId, ExportFileId, 2, 2, 24, "") < 0)
 		raise "fail:export file";
 
-	if(ui->label(u, ExportPanelId, ExportRowsId, 2, 3, 20, "") < 0)
+	if(ui->label(u, ExportPanelId, ExportRowsId, 2, 3, 24, "") < 0)
 		raise "fail:export rows";
 
 	if(ui->progress(u, ExportPanelId, ExportProgressId, 2, 4, 18, 0, 100) < 0)
 		raise "fail:export progress";
 
-	if(ui->window(u, WinId, BuildPanelId, 55, 11, 24, 6, " Build job ") < 0)
+	if(ui->window(u, WinId, BuildPanelId, 62, 11, 24, 6, " Build job ") < 0)
 		raise "fail:build panel";
 
 	if(ui->label(u, BuildPanelId, BuildTitleId, 2, 1, 18, "Pipeline") < 0)

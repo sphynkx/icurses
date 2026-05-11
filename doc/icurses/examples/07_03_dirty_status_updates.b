@@ -134,9 +134,7 @@ refresh(u: ref IcUi->Ui, status: string)
 	ui->settext(u, BadgeId, "BADGE " + sys->sprint("%d", badgeupdates));
 
 	if(panelvisible)
-		ui->settext(u, PanelLine2Id, "Panel is visible and only this region changes.");
-	else
-		ui->settext(u, PanelLine2Id, "Panel is hidden.");
+		ui->settext(u, PanelLine2Id, " Panel is visible and only this region changes.");
 
 	ui->setstatus(u, status);
 	ui->draw(u);
@@ -169,22 +167,22 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, StatusBoxId, CountId, 2, 2, 28, "") < 0)
 		raise "fail:count";
 
-	if(ui->window(u, WinId, BadgeBoxId, 39, 4, 28, 5, " Badge area ") < 0)
+	if(ui->window(u, WinId, BadgeBoxId, 39, 4, 32, 5, " Badge area ") < 0)
 		raise "fail:badge box";
 
 	if(ui->label(u, BadgeBoxId, BadgeId, 8, 2, 14, "") < 0)
 		raise "fail:badge";
 
-	if(ui->window(u, WinId, PanelId, 3, 10, 64, 4, " Details panel ") < 0)
+	if(ui->window(u, WinId, PanelId, 3, 10, 68, 4, " Details panel ") < 0)
 		raise "fail:panel";
 
 	if(ui->label(u, PanelId, PanelTitleId, 2, 1, 58, "This framed block is toggled by the Panel button.") < 0)
 		raise "fail:panel title";
 
-	if(ui->label(u, PanelId, PanelLine1Id, 2, 2, 58, "Renderer compares final cells and flushes only changed parts.") < 0)
+	if(ui->label(u, PanelId, PanelLine1Id, 2, 2, 62, "Renderer compares final cells and flushes only changed parts.") < 0)
 		raise "fail:panel line 1";
 
-	if(ui->label(u, PanelId, PanelLine2Id, 2, 3, 58, "") < 0)
+	if(ui->label(u, PanelId, PanelLine2Id, 2, 3, 48, "") < 0)
 		raise "fail:panel line 2";
 
 	if(ui->button(u, WinId, BtnStatusId, 3, 15, 12, 1, "Status", "s", AppTarget, "app.status") < 0)

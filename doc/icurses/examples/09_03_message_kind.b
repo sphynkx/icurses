@@ -189,7 +189,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	root, x, y: int;
 
 	root = ui->rootid(u);
-	x = center(sw, 80);
+	x = center(sw, 100);
 	y = center(sh, 19);
 
 	ui->setstatusrows(u, sh - 2, sh - 1);
@@ -198,10 +198,10 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->group(u, root, LayerId, 0, 0, sw, sh) < 0)
 		raise "fail:layer";
 
-	if(ui->window(u, LayerId, WinId, x, y, 80, 19, " Message kind ") < 0)
+	if(ui->window(u, LayerId, WinId, x, y, 100, 19, " Message kind ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 70, "The same Msg structure can represent commands, notifications and lifecycle events.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 84, "The same Msg structure can represent commands, notifications and lifecycle events.") < 0)
 		raise "fail:title";
 
 	if(ui->window(u, WinId, KindBoxId, 3, 4, 34, 9, " Kind selector ") < 0)
@@ -219,19 +219,19 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->label(u, KindBoxId, KindFocusId, 2, 4, 26, "") < 0)
 		raise "fail:kind focus";
 
-	if(ui->window(u, WinId, MessageBoxId, 40, 4, 35, 9, " Message view ") < 0)
+	if(ui->window(u, WinId, MessageBoxId, 40, 4, 58, 9, " Message view ") < 0)
 		raise "fail:message box";
 
-	if(ui->label(u, MessageBoxId, MsgKindId, 2, 1, 30, "") < 0)
+	if(ui->label(u, MessageBoxId, MsgKindId, 2, 1, 54, "") < 0)
 		raise "fail:msg kind";
 
-	if(ui->label(u, MessageBoxId, MsgCmdId, 2, 2, 30, "") < 0)
+	if(ui->label(u, MessageBoxId, MsgCmdId, 2, 2, 54, "") < 0)
 		raise "fail:msg cmd";
 
-	if(ui->label(u, MessageBoxId, MsgMeaningId, 2, 4, 30, "") < 0)
+	if(ui->label(u, MessageBoxId, MsgMeaningId, 2, 4, 54, "") < 0)
 		raise "fail:msg meaning";
 
-	if(ui->label(u, MessageBoxId, MsgCountId, 2, 6, 30, "") < 0)
+	if(ui->label(u, MessageBoxId, MsgCountId, 2, 6, 54, "") < 0)
 		raise "fail:msg count";
 
 	if(ui->button(u, WinId, BtnCommandId, 3, 15, 12, 1, "Command", "c", AppTarget, "app.kind.command") < 0)

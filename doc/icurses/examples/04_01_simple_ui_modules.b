@@ -141,7 +141,7 @@ build(u: ref IcUi->Ui, sw, sh: int)
 
 	root = ui->rootid(u);
 
-	w = 74;
+	w = 78;
 	h = 16;
 	x = center(sw, w);
 	y = center(sh, h);
@@ -155,28 +155,28 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, w, h, " Simple UI module scheme ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 64, "A regular UI app includes icurses/ui.m and loads used runtime modules.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 70, "A regular UI app includes icurses/ui.m and loads used runtime modules.") < 0)
 		raise "fail:title";
 
-	if(ui->label(u, WinId, IncludeId, 3, 4, 64, "include: draw.m + icurses/ui.m") < 0)
+	if(ui->label(u, WinId, IncludeId, 3, 4, 70, "include: draw.m + icurses/ui.m") < 0)
 		raise "fail:include label";
 
-	if(ui->label(u, WinId, LoadId, 3, 5, 64, "load: Sys, Icurses, IcUi, IcMsg") < 0)
+	if(ui->label(u, WinId, LoadId, 3, 5, 70, "load: Sys, Icurses, IcUi, IcMsg") < 0)
 		raise "fail:load label";
 
-	if(ui->label(u, WinId, InitId, 3, 6, 64, "init: ic->init(), ui->init(), msg->init()") < 0)
+	if(ui->label(u, WinId, InitId, 3, 6, 70, "init: ic->init(), ui->init(), msg->init()") < 0)
 		raise "fail:init label";
 
-	if(ui->label(u, WinId, RuleId, 3, 8, 64, "Rule: load and init modules whose functions are called directly.") < 0)
+	if(ui->label(u, WinId, RuleId, 3, 8, 70, "Rule: load and init modules whose functions are called directly.") < 0)
 		raise "fail:rule label";
 
-	if(ui->group(u, WinId, DetailsGroupId, 3, 10, 64, 3) < 0)
+	if(ui->group(u, WinId, DetailsGroupId, 3, 10, 70, 3) < 0)
 		raise "fail:details group";
 
-	if(ui->label(u, DetailsGroupId, DetailsLine1Id, 0, 0, 62, "IcMsg is visible through the IcUi include chain.") < 0)
+	if(ui->label(u, DetailsGroupId, DetailsLine1Id, 0, 0, 70, "IcMsg is visible through the IcUi include chain.") < 0)
 		raise "fail:details line 1";
 
-	if(ui->label(u, DetailsGroupId, DetailsLine2Id, 0, 1, 62, "It is still loaded because this app calls msg->newmsg() directly.") < 0)
+	if(ui->label(u, DetailsGroupId, DetailsLine2Id, 0, 1, 70, "It is still loaded because this app calls msg->newmsg() directly.") < 0)
 		raise "fail:details line 2";
 
 	if(ui->button(u, WinId, BtnToggleId, 3, 13, 12, 1, "Toggle", "t", AppTarget, "app.toggle") < 0)

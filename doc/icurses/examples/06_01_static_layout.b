@@ -159,17 +159,17 @@ build(u: ref IcUi->Ui, sw, sh: int)
 	if(ui->window(u, LayerId, WinId, x, y, 80, 20, " Static layout ") < 0)
 		raise "fail:window";
 
-	if(ui->label(u, WinId, TitleId, 3, 2, 70, "Static layout uses explicit local coordinates inside a known container.") < 0)
+	if(ui->label(u, WinId, TitleId, 3, 2, 72, "Static layout uses explicit local coordinates inside a known container.") < 0)
 		raise "fail:title";
 
-	if(ui->window(u, WinId, MapId, 3, 4, 70, 11, " Fixed coordinate map ") < 0)
+	if(ui->window(u, WinId, MapId, 3, 4, 72, 11, " Fixed coordinate map ") < 0)
 		raise "fail:map";
 
 	buildcard(u, MapId, CardAId, CardATitleId, CardATextId, 3, 1, "local slot 1");
 	buildcard(u, MapId, CardBId, CardBTitleId, CardBTextId, 28, 1, "local slot 2");
 	buildcard(u, MapId, CardCId, CardCTitleId, CardCTextId, 53, 1, "local slot 3");
 
-	if(ui->label(u, WinId, StatusId, 3, 15, 70, "") < 0)
+	if(ui->label(u, WinId, StatusId, 3, 15, 72, "") < 0)
 		raise "fail:status";
 
 	if(ui->button(u, WinId, BtnAId, 3, 17, 8, 1, "A", "a", AppTarget, "app.a") < 0)
