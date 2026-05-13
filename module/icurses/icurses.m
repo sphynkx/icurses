@@ -11,17 +11,36 @@ Icurses: module
 	DefaultCols: con 80;
 	DefaultRows: con 24;
 
-	Khome:     con 57360;
-	Kend:      con 57361;
-	Kup:       con 57362;
-	Kdown:     con 57363;
-	Kleft:     con 57364;
-	Kright:    con 57365;
-	Kpgup:     con 57366;
-	Kpgdown:   con 57367;
-	Kbacktab:  con 57368;
-	Kins:      con 57443;
-	Kdel:      con 57444;
+	Kcapslock:   con 57348;
+	Knumlock:    con 57349;
+
+	Khome:       con 57360;
+	Kend:        con 57361;
+	Kup:         con 57362;
+	Kdown:       con 57363;
+	Kleft:       con 57364;
+	Kright:      con 57365;
+	Kpgup:       con 57366;
+	Kpgdown:     con 57367;
+	Kbacktab:    con 57368;
+
+	Kf1:         con 57409;
+	Kf2:         con 57410;
+	Kf3:         con 57411;
+	Kf4:         con 57412;
+	Kf5:         con 57413;
+	Kf6:         con 57414;
+	Kf7:         con 57415;
+	Kf8:         con 57416;
+	Kf9:         con 57417;
+	Kf10:        con 57418;
+	Kf11:        con 57419;
+	Kf12:        con 57420;
+
+	Kscrolllock:  con 57442;
+	Kins:         con 57443;
+	Kdel:         con 57444;
+	Kctrlnumlock: con 57446;
 
 	NavNone:     con 0;
 	NavPrev:     con 1;
@@ -107,7 +126,6 @@ Icurses: module
 	steperr: fn(): StepCtl;
 
 	isconfirm: fn(k: int): int;
-	iscancel: fn(k: int): int;
 	navkind: fn(k: int): int;
 
 	cleartty: fn(out: ref Sys->FD);

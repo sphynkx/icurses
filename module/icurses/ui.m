@@ -28,6 +28,9 @@ IcUi: module
 		tickc:     chan of int;
 		tickms:    int;
 		ticks:     int;
+
+		quitkey1:  string;
+		quitkey2:  string;
 	};
 
 	Step: adt
@@ -50,6 +53,7 @@ IcUi: module
 	stop: fn(u: ref Ui);
 
 	settick: fn(u: ref Ui, ms: int);
+	setquitkeys: fn(u: ref Ui, key1, key2: string);
 
 	enablemouse: fn(u: ref Ui, enabled: int): int;
 	ismouseenabled: fn(u: ref Ui): int;

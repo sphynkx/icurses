@@ -15,6 +15,9 @@ parseintat: fn(s: string, i: int): (int, int, int);
 paramint: fn(s, key: string, def: int): int;
 paramstr: fn(s, key, def: string): string;
 defaultconsinfo: fn(): ConsInfo;
+fkeyname: fn(k: int): string;
+ctrlkeyname: fn(k: int): string;
+altkeyname: fn(k: int): string;
 
 init()
 {
@@ -85,26 +88,329 @@ readkey(): int
 	}
 }
 
+fkeyname(k: int): string
+{
+	if(k >= Kf1 && k <= Kf12)
+		return "F" + sys->sprint("%d", (k - Kf1) + 1);
+
+	return "";
+}
+
+ctrlkeyname(k: int): string
+{
+	b: array of byte;
+
+	if(k == 0)
+		return "Ctrl-Space";
+
+	if(k >= 1 && k <= 26){
+		b = array[1] of byte;
+		b[0] = byte (k - 1 + int 'A');
+		return "Ctrl-" + string b;
+	}
+
+	if(k == 127)
+		return "Ctrl-Backspace";
+
+	return "";
+}
+
+altkeyname(k: int): string
+{
+	case k {
+	57864 =>
+		return "Alt-Ctrl-Backspace";
+
+	57865 =>
+		return "Alt-Tab";
+
+	57866 =>
+		return "Alt-Enter";
+
+	57883 =>
+		return "Alt-Escape";
+
+	57889 =>
+		return "Alt-!";
+
+	57891 =>
+		return "Alt-#";
+
+	57892 =>
+		return "Alt-$";
+
+	57893 =>
+		return "Alt-%";
+
+	57894 =>
+		return "Alt-&";
+
+	57895 =>
+		return "Alt-'";
+
+	57896 =>
+		return "Alt-(";
+
+	57897 =>
+		return "Alt-)";
+
+	57898 =>
+		return "Alt-*";
+
+	57899 =>
+		return "Alt-+";
+
+	57900 =>
+		return "Alt-,";
+
+	57901 =>
+		return "Alt--";
+
+	57902 =>
+		return "Alt-.";
+
+	57903 =>
+		return "Alt-/";
+
+	57904 =>
+		return "Alt-0";
+	57905 =>
+		return "Alt-1";
+	57906 =>
+		return "Alt-2";
+	57907 =>
+		return "Alt-3";
+	57908 =>
+		return "Alt-4";
+	57909 =>
+		return "Alt-5";
+	57910 =>
+		return "Alt-6";
+	57911 =>
+		return "Alt-7";
+	57912 =>
+		return "Alt-8";
+	57913 =>
+		return "Alt-9";
+
+	57915 =>
+		return "Alt-;";
+
+	57917 =>
+		return "Alt-=";
+
+	57920 =>
+		return "Alt-@";
+
+	57921 =>
+		return "Alt-Shift-A";
+	57922 =>
+		return "Alt-Shift-B";
+	57923 =>
+		return "Alt-Shift-C";
+	57924 =>
+		return "Alt-Shift-D";
+	57925 =>
+		return "Alt-Shift-E";
+	57926 =>
+		return "Alt-Shift-F";
+	57927 =>
+		return "Alt-Shift-G";
+	57928 =>
+		return "Alt-Shift-H";
+	57929 =>
+		return "Alt-Shift-I";
+	57930 =>
+		return "Alt-Shift-J";
+	57931 =>
+		return "Alt-Shift-K";
+	57932 =>
+		return "Alt-Shift-L";
+	57933 =>
+		return "Alt-Shift-M";
+	57934 =>
+		return "Alt-Shift-N";
+	57935 =>
+		return "Alt-Shift-O";
+	57936 =>
+		return "Alt-Shift-P";
+	57937 =>
+		return "Alt-Shift-Q";
+	57938 =>
+		return "Alt-Shift-R";
+	57939 =>
+		return "Alt-Shift-S";
+	57940 =>
+		return "Alt-Shift-T";
+	57941 =>
+		return "Alt-Shift-U";
+	57942 =>
+		return "Alt-Shift-V";
+	57943 =>
+		return "Alt-Shift-W";
+	57944 =>
+		return "Alt-Shift-X";
+	57945 =>
+		return "Alt-Shift-Y";
+	57946 =>
+		return "Alt-Shift-Z";
+
+	57947 =>
+		return "Alt-[";
+	57948 =>
+		return "Alt-\\";
+	57949 =>
+		return "Alt-]";
+	57950 =>
+		return "Alt-^";
+	57951 =>
+		return "Alt-_";
+	57952 =>
+		return "Alt-`";
+
+	57953 =>
+		return "Alt-A";
+	57954 =>
+		return "Alt-B";
+	57955 =>
+		return "Alt-C";
+	57956 =>
+		return "Alt-D";
+	57957 =>
+		return "Alt-E";
+	57958 =>
+		return "Alt-F";
+	57959 =>
+		return "Alt-G";
+	57960 =>
+		return "Alt-H";
+	57961 =>
+		return "Alt-I";
+	57962 =>
+		return "Alt-J";
+	57963 =>
+		return "Alt-K";
+	57964 =>
+		return "Alt-L";
+	57965 =>
+		return "Alt-M";
+	57966 =>
+		return "Alt-N";
+	57967 =>
+		return "Alt-O";
+	57968 =>
+		return "Alt-P";
+	57969 =>
+		return "Alt-Q";
+	57970 =>
+		return "Alt-R";
+	57971 =>
+		return "Alt-S";
+	57972 =>
+		return "Alt-T";
+	57973 =>
+		return "Alt-U";
+	57974 =>
+		return "Alt-V";
+	57975 =>
+		return "Alt-W";
+	57976 =>
+		return "Alt-X";
+	57977 =>
+		return "Alt-Y";
+	57978 =>
+		return "Alt-Z";
+
+	57982 =>
+		return "Alt-~";
+
+	57983 =>
+		return "Alt-Backspace";
+	}
+
+	return "";
+}
+
 keyname(k: int): string
 {
-	if(k == Khome) return "Home";
-	if(k == Kend) return "End";
-	if(k == Kup) return "Up";
-	if(k == Kdown) return "Down";
-	if(k == Kleft) return "Left";
-	if(k == Kright) return "Right";
-	if(k == Kpgup) return "PgUp";
-	if(k == Kpgdown) return "PgDown";
-	if(k == Kbacktab) return "BackTab";
-	if(k == Kins) return "Insert";
-	if(k == Kdel) return "Delete";
+	n: string;
 
-	if(k == '\n') return "Enter";
-	if(k == '\r') return "Return";
-	if(k == '\t') return "Tab";
-	if(k == 8) return "Backspace";
-	if(k == 27) return "Esc";
-	if(k == ' ') return "Space";
+	case k {
+	Kcapslock =>
+		return "CapsLock";
+
+	Knumlock =>
+		return "NumLock";
+
+	Khome =>
+		return "Home";
+
+	Kend =>
+		return "End";
+
+	Kup =>
+		return "Up";
+
+	Kdown =>
+		return "Down";
+
+	Kleft =>
+		return "Left";
+
+	Kright =>
+		return "Right";
+
+	Kpgup =>
+		return "PageUp";
+
+	Kpgdown =>
+		return "PageDown";
+
+	Kbacktab =>
+		return "Shift-Tab";
+
+	Kscrolllock =>
+		return "ScrollLock";
+
+	Kins =>
+		return "Insert";
+
+	Kdel =>
+		return "Delete";
+
+	Kctrlnumlock =>
+		return "Ctrl-NumLock";
+
+	'\n' =>
+		return "Enter";
+
+	'\r' =>
+		return "Return";
+
+	'\t' =>
+		return "Tab";
+
+	8 =>
+		return "Backspace";
+
+	27 =>
+		return "Escape";
+
+	' ' =>
+		return "Space";
+	}
+
+	n = fkeyname(k);
+	if(n != "")
+		return n;
+
+	n = ctrlkeyname(k);
+	if(n != "")
+		return n;
+
+	n = altkeyname(k);
+	if(n != "")
+		return n;
 
 	if(k >= 32 && k < 127)
 		return "'" + string k + "'";
@@ -345,13 +651,6 @@ isconfirm(k: int): int
 	if(k == '\n')
 		return 1;
 	if(k == '\r')
-		return 1;
-	return 0;
-}
-
-iscancel(k: int): int
-{
-	if(k == 27)
 		return 1;
 	return 0;
 }

@@ -11,6 +11,7 @@ ic: Icurses;
 
 DefaultMaxItems: con 32;
 DefaultRows: con 5;
+EscapeKeyCode: con 27;
 
 none: fn(): IcMsg->Msg;
 focusedid: fn(u: ref IcUi->Ui): int;
@@ -575,7 +576,7 @@ handlekey(u: ref IcUi->Ui, h: ref IcHistory->History, k: int): IcMsg->Msg
 		return apply(u, h);
 	}
 
-	if(ic->iscancel(k)){
+	if(k == EscapeKeyCode){
 		if(h.visible){
 			hide(u, h);
 			m = historymsg(h, "history.hide", "");

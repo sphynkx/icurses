@@ -5,6 +5,7 @@ TARG=\
 	app.dis\
 	button.dis\
 	canvas.dis\
+	config.dis\
 	control.dis\
 	focus.dis\
 	form.dis\
@@ -33,6 +34,7 @@ SYSMODULES=\
 	icurses/app.m\
 	icurses/button.m\
 	icurses/canvas.m\
+	icurses/config.m\
 	icurses/control.m\
 	icurses/focus.m\
 	icurses/form.m\
